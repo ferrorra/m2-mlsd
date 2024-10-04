@@ -1,0 +1,219 @@
+/* Typing animation for the title */
+.typing-animation {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.5em; /* Smaller title size */
+  font-weight: 600;
+  color: blue4; /* Change title color to blue4 */
+  border-right: .15em solid #666;
+  white-space: nowrap;
+  overflow: hidden;
+  letter-spacing: .1em;
+  animation: typing 3.5s steps(30, end), blink-caret .75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #666; }
+}
+
+/* Styling for buttons */
+.btn, .action-button {
+  background-color: #add8e6; /* Light blue background */
+  color: black;              /* Black text */
+  border: none;
+  padding: 8px 15px;         /* Smaller padding */
+  font-size: 14px;           /* Smaller font size */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border-radius: 4px;        /* Small rounded corners */
+  display: inline-block;     /* Make buttons fit text size */
+}
+
+.btn:hover, .action-button:hover {
+  background-color: #87CEEB; /* Slightly darker light blue on hover */
+}
+
+/* Ensure buttons hide when sidebar is hidden */
+.sidebar-collapsed .btn, .sidebar-collapsed .action-button {
+  display: none;
+}
+
+/* Sidebar styling */
+.main-sidebar {
+  background-color: #2c3e50; /* Dark blue background */
+  color: white;
+}
+
+.main-sidebar .sidebar-menu .menu-item {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.main-sidebar .sidebar-menu .menu-item:hover {
+  background-color: #34495e; /* Slightly lighter on hover */
+}
+
+/* Dashboard body text and layout improvements */
+.content-wrapper {
+  font-family: 'Montserrat', sans-serif;
+  padding: 20px;
+  background-color: #ecf0f1; /* Light gray background for content area */
+}
+
+h2, h3 {
+  font-family: 'Montserrat', sans-serif;
+  color: #2c3e50;
+}
+
+/* Table styling */
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.table th, .table td {
+  text-align: left;
+  padding: 8px;
+}
+
+.table th {
+  background-color: #3498db; /* Blue header */
+  color: white;
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.table tr:hover {
+  background-color: #ddd; /* Lighter gray on hover */
+}
+
+/* Loader spinner improvements */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.3em;
+}
+
+/* General button and interaction improvements */
+.btn, .action-button {
+  border-radius: 4px; /* Rounded corners for buttons */
+  margin-bottom: 10px; /* Spacing between buttons */
+}
+
+/* Dashboard header title color */
+.main-header .logo,
+.main-header .navbar .navbar-brand {
+  color: #2c3e50 !important; /* Apply the blue color to the header title */
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.5em;
+}
+
+.navbar{
+  background-color: #add8e6 !important;
+}
+
+.logo{
+  background-color: #add8e6 !important;
+}
+
+
+
+/* Force styling for downloadButton */
+#Download {
+  background-color: #add8e6 !important;  /* Light blue background */
+  color: #2c3e50 !important;             /* Dark blue text */
+  border: none !important;
+  padding: 8px 15px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: background-color 0.3s ease !important;
+  border-radius: 4px !important;
+  display: inline-block !important;
+  margin-left: 7% !important;  /* Add left margin of 10% */
+}
+
+#Download:hover {
+  background-color: #87CEEB !important;  /* Slightly darker blue on hover */
+}
+
+
+/* Hide all content within the sidebar when the sidebar is collapsed */
+.sidebar-mini.sidebar-collapse .main-sidebar .sidebar-menu,
+.sidebar-mini.sidebar-collapse .main-sidebar .sidebar-menu * {
+  display: none !important;
+}
+
+.sidebar-mini.sidebar-collapse .main-sidebar .file-input,
+.sidebar-mini.sidebar-collapse .main-sidebar .action-button,
+.sidebar-mini.sidebar-collapse .main-sidebar .checkbox,
+.sidebar-mini.sidebar-collapse .main-sidebar .radio-buttons,
+.sidebar-mini.sidebar-collapse .main-sidebar .btn {
+  display: none !important;
+}
+
+/* Hide all content within the sidebar when the sidebar is collapsed */
+.sidebar-mini.sidebar-collapse .main-sidebar .sidebar-menu,
+.sidebar-mini.sidebar-collapse .main-sidebar .sidebar-menu * {
+  display: none !important;
+}
+
+/* Also hide fileInput, downloadButton, and radioButtons when sidebar is collapsed */
+.sidebar-mini.sidebar-collapse .main-sidebar .form-group,
+.sidebar-mini.sidebar-collapse .main-sidebar .btn,
+.sidebar-mini.sidebar-collapse .main-sidebar .shiny-input-container {
+  display: none !important;
+}
+
+/* Hide all content within the sidebar when the sidebar is collapsed */
+.sidebar-mini.sidebar-collapse .main-sidebar .sidebar-menu,
+.sidebar-mini.sidebar-collapse .main-sidebar .sidebar-menu * {
+  display: none !important;
+}
+
+/* Also hide fileInput, radioButtons, and downloadButton when sidebar is collapsed */
+.sidebar-mini.sidebar-collapse .main-sidebar .form-group,
+.sidebar-mini.sidebar-collapse .main-sidebar .shiny-input-container {
+  display: none !important;
+}
+
+/* Specifically hide the download button by its input ID */
+.sidebar-mini.sidebar-collapse #Download {
+  display: none !important;
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Override the success box header color */
+.box.box-solid.box-success > .box-header {
+  background-color: #2c3e50 !important; /* Change the background color */
+  color: white !important; /* Ensure the text is white and visible */
+  border-color: #2c3e50 !important; /* Match the border color to the background */
+}
+
+/* Ensure the text inside the box is visible */
+.box.box-solid.box-success > .box-header h3 {
+  color: white !important; /* Force the header text to be white */
+}
+
+/* Optional: Change the box border color */
+.box.box-solid.box-success {
+  border-color: #2c3e50 !important;
+}
+
+
