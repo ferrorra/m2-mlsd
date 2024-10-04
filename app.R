@@ -625,7 +625,37 @@ shinyApp(
                               )
                 
                 )
-                ),
+      ),
+      tabItem(tabName = "crce",
+              fluidPage(
+                column(12,
+                      tabBox(width = 12,
+                              tabPanel("Cercle de Corrélation",
+                                      fluidRow(
+                                        column(12, align = "center",
+                                                h3("Cercle de Corrélation", style = "color: #0073B7;"),
+                                                br(),
+                                                textOutput("circleText"),
+                                                br(),
+                                                tags$head(tags$style("#Tcercle{
+                                                                      color: #FF6347;
+                                                                      font-size: 18px;
+                                                                      font-style: italic;
+                                                                      text-align: center;
+                                                                      }"
+                                                ))
+                                        )
+                                      ),
+                                      fluidRow(
+                                        column(12, align = "center",
+                                                plotlyOutput("correlationCirclePlot", height = "600px")
+                                        )
+                                      )
+                              )
+                      )
+                )
+              )
+      ),
       tabItem(tabName = "Dataset",
               fluidPage(
                 
@@ -661,79 +691,163 @@ shinyApp(
       ),
       
       tabItem(tabName = "Unv",
-              fluidPage(
-                fluidRow(  
-                  column( 
-                    width = 12,
-                    tabBox(
-                      width = 12,
-                      
-                      title = "Variables",
-                      # The id lets us use input$tabset1 on the server to find the current tab
-                      id = "tabset1", 
-                      tabPanel("Quantitative", value = "tab_quantitative",
-                               uiOutput('quantlist'),
-                               verbatimTextOutput(outputId = "summary")
-                               
-                               
-                               
-                               
-                               
-                               
-                      ),
-                      tabPanel("Qualitative", value = "tab_qualitative",
-                               uiOutput('qualist'))
-                    )),
-                  conditionalPanel(
-                    condition = "input.tabset1 == 'tab_quantitative'",
-                    column(
-                      width = 12,
-                      box(
-                        title = "Diagramme en batons des effectifs", status = "primary", solidHeader = TRUE,
-                        collapsible = TRUE,
-                        plotOutput(outputId = "effectifsDiag")
-                      ),
-                      box(
-                        title = "Boite a moustaches", status = "primary", solidHeader = TRUE,
-                        collapsible = TRUE,
-                        plotOutput(outputId = "boiteMoustaches")
-                      )
-                      
-                    ),
-                    column(
-                      width = 12,
-                      box(
-                        title = "Histogramme d'effectifs", status = "info", solidHeader = TRUE,
-                        collapsible = TRUE,
-                        plotOutput(outputId = "effectifsHist")
-                      ),
-                      box(
-                        title = "Caractéristiques de tendance centrale et de dispersion", status = "info", solidHeader = TRUE,
-                        collapsible = TRUE,
-                        tableOutput(outputId = "centreDisp"))
-                    ),
-                    
-                    column(width = 12,
-                           box(
-                             width = 12,
-                             title = "Courbe cumulative", status = "info", solidHeader = TRUE,
-                             collapsible = TRUE,
-                             plotOutput(outputId = "effectifsCumCurve")
-                             
-                           )
-                    )
-                    
-                    
-                  ),
-                  uiOutput("myConditionalPanel")
-                  
-                  
-                  
-                  
+        fluidPage(
+          fluidRow(  
+            column( 
+              width = 12,
+              tabBox(
+                width = 12,
+                title = "Variables",
+                id = "tabset1", 
+                tabPanel("Quantitative", value = "tab_quantitative",
+                        uiOutput('quantlist'),
+                        verbatimTextOutput(outputId = "summary")
+                ),
+                tabPanel("Qualitative", value = "tab_qualitative",
+                        uiOutput('qualist'))
+              )
+            ),
+            conditionalPanel(
+              condition = "input.tabset1 == 'tab_quantitative'",
+              column(
+                width = 12,
+                box(
+                  title = "Diagramme en bâtons des effectifs", status = "primary", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "effectifsDiag")
+                ),
+                box(
+                  title = "Boîte à moustaches", status = "primary", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "boiteMoustaches")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  title = "Histogramme d'effectifs", status = "info", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "effectifsHist")
+                ),
+                box(
+                  title = "Caractéristiques de tendance centrale et de dispersion", status = "info", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  tableOutput(outputId = "centreDisp")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  width = 12,
+                  title = "Courbe cumulative", status = "info", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "effectifsCumCurve")
+                )
+              ),
+              # New plots for quantitative variables
+              column(
+                width = 12,
+                box(
+                  title = "Diagramme Quantile-Quantile", status = "success", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "qqPlot")
+                ),
+                box(
+                  title = "Graphique de densité", status = "success", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "densityPlot")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  title = "Diagramme en violon", status = "warning", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "violinPlot")
+                ),
+                box(
+                  title = "Nuage de points", status = "warning", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "dotPlot")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  title = "Diagramme tige-et-feuille", status = "danger", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  verbatimTextOutput(outputId = "stemLeafPlot")
+                ),
+                box(
+                  title = "Graphique ECDF", status = "danger", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "ecdfPlot")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  title = "Graphique en peigne", status = "primary", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "rugPlot")
+                ),
+                box(
+                  title = "Graphique en bandes", status = "primary", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "stripPlot")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  width = 12,
+                  title = "Nuage de points (Scatter Plot)", status = "info", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "scatterPlot")
                 )
               )
-              
-              
+            ),
+            conditionalPanel(
+              condition = "input.tabset1 == 'tab_qualitative'",
+              column(
+                width = 12,
+                box(
+                  title = "Diagramme en barres", status = "success", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "barPlot")
+                ),
+                box(
+                  title = "Diagramme circulaire", status = "success", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "pieChart")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  title = "Graphique en mosaïque", status = "warning", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "mosaicPlot")
+                ),
+                box(
+                  title = "Diagramme en barres empilées", status = "warning", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "stackedBarPlot")
+                )
+              ),
+              column(
+                width = 12,
+                box(
+                  width = 12,
+                  title = "Diagramme de Pareto", status = "danger", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  plotOutput(outputId = "paretoChart")
+                )
+              )
+            ),
+            uiOutput("myConditionalPanel")
+          )
+        )
       ),
       tabItem(tabName = "Bv",
               fluidPage(
@@ -1241,11 +1355,7 @@ shinyApp(
       
                 
               } )
-              
-              
-              
-              
-              
+
             }
             
             
@@ -1994,14 +2104,7 @@ shinyApp(
               
               
             } )
-            
-            
-            
-            
-            
-            
-            
-            
+
           }
           
           
