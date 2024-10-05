@@ -1,27 +1,9 @@
 univaree_server <- function(input,output, df) {
-  # data=reactive({
-  #   infile<-input$file
-  #   if(is.null(infile)) return (NULL)
-  #   delim<-get.delim(infile$datapath, n = 10, comment = "#", skip = 0, delims = c("\t", "\t| +", " ", ";", ","), large = 10, one.byte = TRUE)
-  #   #print(delim)
-  #   #read.csv(infile$datapath, header=input$Header, sep =delim)
-  #   if(get.ext(infile$datapath)=="xls"){
-  #     #print("I am here xls")
-  #     read_excel(infile$datapath)
-  #     
-  #   }else{
-  #     read.csv(infile$datapath, header=input$Header, sep =delim)
-  #     
-  #   }
-  #   
-  #   
-  #   
-  #   
-  #   
-  #   
-  #   
-  # })
-  # liste de variables quantitatives
+
+  # Color palette
+  colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
+  
+
   output$quantlist = renderUI({
     selectInput('qnt', 'Le choix de la variable', names(df)[!grepl('factor|logical|character',sapply(df,class))])
   })
@@ -111,6 +93,91 @@ univaree_server <- function(input,output, df) {
     
   })
   
+
+
+  output$qqPlot <- renderPlot({
+    dt <- df
+    qqnorm(dt[,input$qnt], main = paste("Diagramme Quantile-Quantile pour", input$qnt),
+           col = colors[1], pch = 19)
+    qqline(dt[,input$qnt], col = "red", lwd = 2)
+    grid()
+  })
+  
+  output$densityPlot <- renderPlot({
+    dt <- df
+    dens <- density(as.numeric(as.character(dt[,input$qnt])))
+    plot(dens, main = paste("Graphique de densité pour", input$qnt),
+         xlab = input$qnt, ylab = "Densité",
+         col = colors[2], lwd = 2)
+    polygon(dens, col = adjustcolor(colors[2], alpha.f = 0.5), border = NA)
+    grid()
+  })
+  
+  output$violinPlot <- renderPlot({
+    dt <- df
+    vioplot::vioplot(as.numeric(as.character(dt[,input$qnt])),
+                     main = paste("Diagramme en violon pour", input$qnt),
+                     xlab = "", ylab = "Valeurs",
+                     col = adjustcolor(colors[3], alpha.f = 0.7),
+                     border = colors[3])
+    grid()
+  })
+  
+  output$dotPlot <- renderPlot({
+    dt <- df
+    stripchart(as.numeric(as.character(dt[,input$qnt])),
+               method = "jitter",
+               main = paste("Nuage de points pour", input$qnt),
+               xlab = input$qnt, ylab = "",
+               col = adjustcolor(colors[4], alpha.f = 0.5),
+               pch = 19)
+    grid()
+  })
+  
+  output$stemLeafPlot <- renderPrint({
+    dt <- df
+    cat(paste("Diagramme tige-et-feuille pour", input$qnt, "\n\n"))
+    stem(as.numeric(as.character(dt[,input$qnt])))
+  })
+  
+  output$ecdfPlot <- renderPlot({
+    dt <- df
+    plot(ecdf(as.numeric(as.character(dt[,input$qnt]))),
+         main = paste("Graphique ECDF pour", input$qnt),
+         xlab = input$qnt, ylab = "ECDF",
+         col = colors[5], lwd = 2)
+    grid()
+  })
+  
+  output$rugPlot <- renderPlot({
+    dt <- df
+    plot(as.numeric(as.character(dt[,input$qnt])), 
+         main = paste("Graphique en peigne pour", input$qnt), 
+         xlab = input$qnt, ylab = "", type = "n")
+    rug(as.numeric(as.character(dt[,input$qnt])), col = colors[6], lwd = 2)
+    grid()
+  })
+  
+  output$stripPlot <- renderPlot({
+    dt <- df
+    stripchart(as.numeric(as.character(dt[,input$qnt])),
+               method = "stack",
+               main = paste("Graphique en bandes pour", input$qnt),
+               xlab = input$qnt, ylab = "",
+               col = adjustcolor(colors[7], alpha.f = 0.5),
+               pch = 19)
+    grid()
+  })
+  
+  output$scatterPlot <- renderPlot({
+    dt <- df
+    plot(as.numeric(as.character(dt[,input$qnt])), 
+         main = paste("Nuage de points pour", input$qnt),
+         xlab = "Index", ylab = input$qnt,
+         col = adjustcolor(colors[8], alpha.f = 0.5),
+         pch = 19)
+    grid()
+  })
   
   
   # la liste des variables qualitatives
@@ -219,7 +286,82 @@ univaree_server <- function(input,output, df) {
   
   
   
+
+  # Enhanced plots for qualitative variables
+  output$barPlot <- renderPlot({
+    dt <- df
+    barplot(table(dt[,input$choixx]), 
+            main = paste("Diagramme en barres pour", input$choixx),
+            xlab = input$choixx, ylab = "Fréquence",
+            col = colors,
+            border = "white",
+            las = 2)
+    grid()
+  })
   
+  output$pieChart <- renderPlot({
+    dt <- df
+    pie(table(dt[,input$choixx]), 
+        main = paste("Diagramme circulaire pour", input$choixx),
+        labels = paste(names(table(dt[,input$choixx])), "\n", 
+                       round(prop.table(table(dt[,input$choixx])) * 100, 1), "%"),
+        col = colors,
+        border = "white")
+  })
+  
+  output$mosaicPlot <- renderPlot({
+    dt <- df
+    mosaicplot(table(dt[,input$choixx]), 
+               main = paste("Graphique en mosaïque pour", input$choixx),
+               color = colors,
+               border = "white",
+               las = 2)
+  })
+  
+  output$stackedBarPlot <- renderPlot({
+    dt <- df
+    # This example assumes you have another categorical variable to stack by
+    # You may need to adjust this based on your actual data
+    other_var <- names(df)[grepl('factor|logical|character', sapply(df, class)) & 
+                           names(df) != input$choixx][1]
+    if (!is.na(other_var)) {
+      barplot(table(dt[,input$choixx], dt[,other_var]), 
+              main = paste("Diagramme en barres empilées pour", input$choixx, "et", other_var),
+              xlab = input$choixx, ylab = "Fréquence",
+              col = colors,
+              border = "white",
+              legend = TRUE,
+              args.legend = list(x = "topright", bty = "n"),
+              las = 2)
+      grid()
+    } else {
+      plot.new()
+      text(0.5, 0.5, "Pas assez de variables catégorielles pour un graphique empilé")
+    }
+  })
+  
+  output$paretoChart <- renderPlot({
+    dt <- df
+    freq_table <- sort(table(dt[,input$choixx]), decreasing = TRUE)
+    cumulative_percent <- cumsum(freq_table) / sum(freq_table) * 100
+    
+    par(mar = c(10, 5, 4, 5))
+    bp <- barplot(freq_table, 
+            main = paste("Diagramme de Pareto pour", input$choixx),
+            xlab = "", ylab = "Fréquence",
+            names.arg = "",
+            col = colors,
+            border = "white",
+            las = 2)
+    text(bp, par("usr")[3], labels = names(freq_table), srt = 45, adj = c(1,1), xpd = TRUE)
+    
+    par(new = TRUE)
+    plot(bp, cumulative_percent, type = "b", axes = FALSE, 
+         xlab = "", ylab = "", col = "red", ylim = c(0,100), lwd = 2)
+    axis(side = 4)
+    mtext("Pourcentage cumulé", side = 4, line = 3)
+    grid()
+  })
   
   
   

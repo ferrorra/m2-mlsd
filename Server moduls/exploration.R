@@ -1,51 +1,123 @@
-exploration_server <- function(input,output,df) {
+exploration_server <- function(input, output, df) {
   
-  quantitative<- reactive({
-    names(df)[!grepl('factor|logical|character',sapply(df,class))]
+  quantitative <- reactive({
+    names(df)[!grepl('factor|logical|character', sapply(df, class))]
   })
   
-   # Correlation Heatmap entre les variable quantitative
-   
-    
-     output$heatmap <- renderPlotly({
-       if(length(quantitative())>1){
-         Vm<-colnames(df)[colSums(is.na(df) > 0)]
-         if(length(Vm)==0){
-         
-           heatmaply(cor(df[,quantitative()]), margins = c(40, 40),
-                     k_col = 2, k_row = 2,
-                     limits = c(-1,1))
-         }
-           
-         
-         
-       }
-     })
-   
-   
-     output$soustxt<-renderText({
-       
-     Vm<-colnames(df)[colSums(is.na(df) > 0)]
-     if(length(Vm)>0){
-       output$Theatmap<-renderText({
-         " il existe des valeurs quantitatives manquantes, il faut dabord les imputer"
-       })
-     }
-     if(length(Vm)==0){
-       output$Theatmap<-renderText({
-             " "       })
-       
-     }
-     if(length(quantitative())==0){
-       output$Theatmap<-renderText({
-         "Ce dataset ne contient pas de valeurs quantitatives"       })
+  # Correlation Heatmap entre les variables quantitatives
+  output$heatmap <- renderPlotly({
+    if (length(quantitative()) > 1) {
+      Vm <- colnames(df)[colSums(is.na(df)) > 0]
+      if (length(Vm) == 0) {
+        heatmaply(cor(df[, quantitative()]), margins = c(40, 40),
+                  k_col = 2, k_row = 2,
+                  limits = c(-1, 1))
+      }
+    }
+  })
+  
+  output$soustxt <- renderText({
+    Vm <- colnames(df)[colSums(is.na(df)) > 0]
+    if (length(Vm) > 0) {
+      output$Theatmap <- renderText({
+        "Il existe des valeurs quantitatives manquantes, il faut d'abord les imputer."
+      })
+    } else if (length(Vm) == 0) {
+      output$Theatmap <- renderText({ " " })
+    }
+    if (length(quantitative()) == 0) {
+      output$Theatmap <- renderText({
+        "Ce dataset ne contient pas de valeurs quantitatives."
+      })
+    }
+  })
+  
+
+  # Cercle de Corrélation (PCA) entre variables quantitatives
+  output$correlationCirclePlot <- renderPlotly({
+    if (length(quantitative()) > 1) {
       
-     }
-     
+      # Retirer les colonnes constantes ou entièrement remplies de NA avant le PCA
+      df_quant <- df[, quantitative()]
       
-     })
-    
-    
+      # Ne garder que les colonnes avec des valeurs non constantes et avec variance non nulle
+      df_quant <- df_quant[, apply(df_quant, 2, function(x) length(unique(x[!is.na(x)])) > 1)]
+      
+      # Si après filtrage il reste des colonnes valides
+      if (ncol(df_quant) > 1) {
+        # Perform PCA
+        pca_res <- prcomp(df_quant, scale. = TRUE)
+        
+        # Visualiser les résultats du cercle de corrélation
+        library(factoextra)
+        library(ggplot2)
+        
+        corr_circle <- fviz_pca_var(pca_res, 
+                                    col.var = "contrib",  # Couleur selon les contributions
+                                    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                                    repel = TRUE,        # Éviter les chevauchements de texte
+                                    label = "var",       # Afficher les noms des variables
+                                    labelsize = 5,       # Taille des labels
+                                    pointsize = 3,       # Taille des points
+                                    title = "Cercle de corrélation",
+                                    subtitle = "Basé sur l'ACP des variables quantitatives"
+        ) +
+          theme_minimal() +
+          theme(
+            plot.title = element_text(size = 16, face = "bold"),
+            plot.subtitle = element_text(size = 12),
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10),
+            legend.title = element_text(size = 12),
+            legend.text = element_text(size = 10)
+          )
+        
+        # Convertir en plotly pour l'interactivité
+        p <- ggplotly(corr_circle, tooltip = "text") %>%
+          layout(
+            hoverlabel = list(bgcolor = "white", font = list(size = 12)),
+            legend = list(orientation = "h", y = -0.15)
+          )
+        
+        # Assurez-vous que les noms des variables sont visibles
+        for (i in seq_along(p$x$data)) {
+          if (!is.null(p$x$data[[i]]$text)) {
+            p$x$data[[i]]$text <- gsub("label: ", "", p$x$data[[i]]$text)
+            p$x$data[[i]]$hoverinfo <- "text"
+          }
+        }
+        
+        # Retourner le plot
+        return(p)
+      } else {
+        # Message si aucune variable quantitative valide n'est disponible
+        output$Tcercle <- renderText({
+          "Il n'y a pas assez de variables quantitatives valides pour créer un cercle de corrélation."
+        })
+      }
+      
+    } else {
+      output$Tcercle <- renderText({
+        "Ce dataset ne contient pas assez de valeurs quantitatives pour créer un cercle de corrélation."
+      })
+    }
+  })
+  
+  output$circleText <- renderText({
+    Vm <- colnames(df)[colSums(is.na(df)) > 0]
+    if (length(Vm) > 0) {
+      output$Tcercle <- renderText({
+        "Il existe des valeurs quantitatives manquantes, il faut d'abord les imputer avant de visualiser le cercle de corrélation."
+      })
+    } else if (length(Vm) == 0) {
+      output$Tcercle <- renderText({ " " })
+    }
+    if (length(quantitative()) <= 1) {
+      output$Tcercle <- renderText({
+        "Ce dataset ne contient pas assez de valeurs quantitatives pour créer un cercle de corrélation."
+      })
+    }
+  })
  
   # la méthode SD choisie pour determniner les outliers
   output$caract_quantitative_SD <- renderTable({
