@@ -1046,7 +1046,7 @@ shinyApp(
           ),
           h3("Choose training parameters"),
           radioButtons("radio",
-                      label="Select",
+                      label = "Select",
                       choices = list("Over Sampling" = 1, "Under Sampling" = 2, "No Sampling" = 3),
                       selected = 1,
                       inline = TRUE,
@@ -1054,30 +1054,35 @@ shinyApp(
           
           radioButtons("hyperparameter_tuning",
                       label = "Hyperparameter tuning",
-                      choices = list("Default parameters" = 1, "Grid search" = 2),
-                      selected = 1,
+                      choices = list("Default parameters" = "default", "Grid search" = "grid"),
+                      selected = "default",
                       inline = TRUE,
                       width = "100%"),
           
           tabPanel("Classification",
                   tabsetPanel(
                     tabPanel("Logistic Regression", 
-                              h1("Logistic Regression"),
-                              conditionalPanel(
-                                condition = "input.hyperparameter_tuning == 2",
-                                # sliderInput("lr_lambda", "Regularization (lambda):", min = 0, max = 1, value = 0.1, step = 0.1)
-                              ),
-                              fluidRow(
-                                column(4, h4("Precision: "), textOutput("Acc_LR")),
-                                column(4, h4("Recall: "), textOutput("Rec_LR")),
-                                column(4, h4("F1_score:"), textOutput("f_score_LR"))
-                              ),
-                              plotOutput("classification_lr")
+                      h1("Logistic Regression"),
+                      conditionalPanel(
+                        condition = "input.hyperparameter_tuning == 'grid'",
+                        sliderInput("lr_alpha_range", "Alpha range:", min = 0, max = 1, value = c(0, 1), step = 0.1),
+                        sliderInput("lr_lambda_range", "Lambda range (log scale):", min = -10, max = 2, value = c(-6, 0), step = 0.5),
+                        numericInput("lr_num_lambda", "Number of lambda values:", value = 100, min = 10, max = 500)
+                      ),
+                      actionButton("train_lr", "Train Logistic Regression Model"),
+                      fluidRow(
+                        column(3, h4("Precision: "), textOutput("Acc_LR")),
+                        column(3, h4("Recall: "), textOutput("Rec_LR")),
+                        column(3, h4("F1_score:"), textOutput("f_score_LR")),
+                        column(3, h4("Best Alpha:"), textOutput("best_alpha_LR"))
+                      ),
+                      plotOutput("classification_lr"),
+                      verbatimTextOutput("lr_summary")
                     ),
                     tabPanel("Decision Tree", 
                               h1("Decision Tree"),
                               conditionalPanel(
-                                condition = "input.hyperparameter_tuning == 2",
+                                condition = "input.hyperparameter_tuning == 'grid'",
                                 sliderInput("dt_cp", "Complexity Parameter:", min = 0.001, max = 0.1, value = 0.01, step = 0.001),
                                 sliderInput("dt_minsplit", "Min Split:", min = 5, max = 50, value = 20, step = 5)
                               ),
@@ -1091,47 +1096,47 @@ shinyApp(
                               plotOutput("Classification_DT")
                     ),
                     tabPanel("SVM", 
-                              h1("SVM"),
-                              fluidRow(
-                                column(4,
-                                      radioButtons("svm_kernel",
-                                                  label = "Choose SVM kernel",
-                                                  choices = list(
-                                                    "No Kernel" = "none",
-                                                    "Linear" = "linear",
-                                                    "Polynomial" = "polynomial",
-                                                    "RBF (Radial Basis Function)" = "radial",
-                                                    "Sigmoid" = "sigmoid"
-                                                  ),
-                                                  selected = "radial"
-                                      ),
-                                      conditionalPanel(
-                                        condition = "input.hyperparameter_tuning == 2",
-                                        numericInput("cost", "Cost (C)", value = 1, min = 0.1, max = 10, step = 0.1),
-                                        conditionalPanel(
-                                          condition = "input.svm_kernel == 'polynomial'",
-                                          numericInput("degree", "Degree", value = 3, min = 1, max = 5, step = 1)
-                                        ),
-                                        conditionalPanel(
-                                          condition = "input.svm_kernel == 'radial' || input.svm_kernel == 'sigmoid'",
-                                          numericInput("gamma", "Gamma", value = 1, min = 0.1, max = 5, step = 0.1)
-                                        )
-                                      )
-                                ),
-                                column(8,
-                                      fluidRow(
-                                        column(4, h4("Precision: "), textOutput("Acc_SVM")),
-                                        column(4, h4("Recall: "), textOutput("Rec_SVM")),
-                                        column(4, h4("F1_score:"), textOutput("f_score_SVM"))
-                                      ),
-                                      plotOutput("classification_svm")
-                                )
-                              )
+                      fluidRow(
+                        column(4,
+                          selectInput("svm_kernel",
+                            label = "Choose SVM kernel",
+                            choices = list(
+                              "Linear" = "linear",
+                              "Polynomial" = "polynomial",
+                              "Radial Basis Function (RBF)" = "radial",
+                              "Sigmoid" = "sigmoid"
+                            ),
+                            selected = "linear"
+                          ),
+                          conditionalPanel(
+                            condition = "input.hyperparameter_tuning == 'grid'",
+                            sliderInput("cost_range", "Cost range (log scale):", min = -5, max = 5, value = c(-1, 3), step = 1),
+                            conditionalPanel(
+                              condition = "input.svm_kernel == 'polynomial'",
+                              sliderInput("degree_range", "Degree range:", min = 2, max = 5, value = c(2, 3), step = 1)
+                            ),
+                            conditionalPanel(
+                              condition = "input.svm_kernel == 'radial' || input.svm_kernel == 'sigmoid'",
+                              sliderInput("gamma_range", "Gamma range (log scale):", min = -5, max = 5, value = c(-3, 1), step = 1)
+                            )
+                          ),
+                          actionButton("train_svm", "Train SVM Model")
+                        ),
+                        column(8,
+                          fluidRow(
+                            column(4, h4("Precision: "), textOutput("Acc_SVM")),
+                            column(4, h4("Recall: "), textOutput("Rec_SVM")),
+                            column(4, h4("F1_score:"), textOutput("f_score_SVM"))
+                          ),
+                          plotOutput("classification_svm"),
+                          verbatimTextOutput("svm_summary")
+                        )
+                      )
                     )
                   )
           )
         )
-      ) 
+      )
 
       # tabItem(
       #   tabName = "classification",
@@ -2519,176 +2524,12 @@ shinyApp(
     })
     
     
-    # #RÃ©cupÃ©ration du Dataset selectionnÃ©
-    # datasetInput <- reactive({
-    #   read_csv("Employe.csv")
-    # })
-    
-    
-    
-    # col <- reactive({
-    #   input$variables
-    # })
-    
-    # #Affichage du dataset spiral
-    # output$view_spr = output$view <- DT::renderDataTable({
-    #   datasetInput()
-    # })
-    
-    # pretraitement <- reactive({
-    #   empattr = datasetInput()
-      
-    #   empattr$Education = factor(empattr$Education)
-    #   empattr$Education = revalue(empattr$Education, c("1"="Below College", "2"="College", "3"="Bachelor", "4"="Master", "5"="Doctor"))
-      
-    #   empattr$EnvironmentSatisfaction = factor(empattr$EnvironmentSatisfaction)
-    #   empattr$EnvironmentSatisfaction = revalue(empattr$EnvironmentSatisfaction, c("1"="Low", "2"="Medium", "3"="High", "4"="Very High"))
-      
-    #   empattr$JobInvolvement = factor(empattr$JobInvolvement)
-    #   empattr$JobInvolvement = revalue(empattr$JobInvolvement, c("1"="Low", "2"="Medium", "3"="High", "4"="Very High"))
-      
-    #   empattr$JobSatisfaction = factor(empattr$JobSatisfaction)
-    #   empattr$JobSatisfaction = revalue(empattr$JobSatisfaction, c("1"="Low", "2"="Medium", "3"="High", "4"="Very High"))
-      
-    #   empattr$PerformanceRating = factor(empattr$PerformanceRating)
-      
-    #   empattr$JobLevel = factor(empattr$EnvironmentSatisfaction)
-      
-    #   empattr$WorkLifeBalance = factor(empattr$WorkLifeBalance)
-    #   empattr$WorkLifeBalance = revalue(empattr$WorkLifeBalance, c("1"="Bad", "2"="Good", "3"="Better", "4"="Best"))
-      
-    #   empattr$Attrition = factor(empattr$Attrition)
-    #   empattr$Attrition = revalue(empattr$Attrition, c("No"="No Leave", "Yes"="Leave"))
-      
-    #   empattr$BusinessTravel = factor(empattr$BusinessTravel)
-      
-    #   empattr$Department = factor(empattr$Department)
-      
-    #   empattr$EducationField = factor(empattr$EducationField)
-      
-    #   empattr$Gender = factor(empattr$Gender)
-      
-    #   empattr$JobRole = factor(empattr$JobRole)
-      
-    #   empattr$JobLevel = factor(empattr$JobLevel)
-      
-    #   empattr$MaritalStatus = factor(empattr$MaritalStatus)
-      
-    #   empattr$Over18 = factor(empattr$Over18)
-      
-    #   empattr = empattr[,which(!(names(empattr) %in% c("EmployeeID", "EmployeeCount", "StandardHours", "Over18")))]
-    #   empattr = na.omit(empattr)
-      
-    #   empattr
-    # })
-    
-    
-    # one_hot <- reactive({
-    #   dataset<-pretraitement()
-      
-    #   dataset$EmployeeID=NULL
-    #   dmy <- dummyVars(~., data = dataset[-7])
-    #   data_one_cod <- data.frame(predict(dmy, newdata = dataset))
-    #   data_one_cod$Attrition=dataset$Attrition
-      
-    #   data_one_cod
-      
-      
-    # })
-   
-    
-    
-    # #The following lines of code generate a texbox for model name
-    # output$ModName = renderText({
-    #   paste("Features selection for ", input$choice_model, "Algorithm")
-    # })
-    
-    # indexes = reactive({
-    #   set.seed(1234)
-    #   sample(n,n*(input$choice_validate/100))
-    # })
-    
-    # trainset = reactive({HR_trandata [indexes(),]})
-    
-    # testset = reactive({HR_trandata [-indexes(),]})
-    
-    # balanced_trainset = reactive({
-      
-    #   dat<-one_hot()
-    #   res<-SMOTE(Attrition~., data = dat, perc.over=100)
-    #   res
-    #   #one_hot()
-      
-      
-    # })
-    # svm_type = reactive({
-    #   if(input$choice_type == "nu-classification"){
-    #     paste("nu-classification")
-    #   } else {
-    #     paste("C-classification")
-    #   }
-    # })
-    
-    # svm_kernel = reactive({
-    #   if(input$choice_kernel == "linear"){
-    #     paste("linear")
-    #   } else if(input$choice_kernel == "radial"){
-    #     paste("radial")
-    #   } else if(input$choice_kernel == "sigmoid"){
-    #     paste("sigmoid")
-    #   } else {
-    #     paste("polynomial")
-    #   }
-    # })
-    
-    # trainmodel = reactive({
-    #   if(input$choice_model == "Naive Bayes"){
-    #     naiveBayes(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), data =
-    #                  one_hot())
-    #   } else if(input$choice_model == "Support Vector Machine"){
-    #     svm(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), data =
-    #           one_hot(), type= svm_type(), kernel= svm_kernel())
-    #   } else if(input$choice_model == "Decision Tree"){
-    #     ctree(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), data =
-    #             one_hot(), control = ctree_control(mincriterion = input$choice_threshold, maxdepth =
-    #                                                            input$choice_depth, minsplit = input$choice_split))
-    #   } else if(input$choice_model == "LDA"){
-    #     train(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), method = "lda",
-    #           data = one_hot())
-    #   } else if(input$choice_model == "KNN"){
-    #     train(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), method = "knn",
-    #           data = one_hot())
-    #   } else {
-    #     glm(as.formula(paste("Attrition~ ",paste0(input$choice_indvar, collapse = "+"))), data =
-    #           one_hot(), family = "binomial")
-    #   }
-    # })
-    
-    # #The following lines of code generate the summary output for the model(s)
-    # output$ModSummaryLR = renderPrint({
-    #   summary(trainmodel())
-    # })
-    # output$ModSummaryLDA = renderPrint({
-    #   trainmodel()$finalModel
-    # })
-    
-    # output$ModSummaryNB = renderPrint({
-    #   trainmodel()
-    # })
-    
-    # output$ModSummaryKNN = renderPrint({
-    #   trainmodel()
-    # })
-    
-    # output$ModSummarySVM = renderPrint({
-    #   trainmodel()
-    # })
-    # #The following lines of code generate the decision tree plot
-    # output$DTREE = renderPlot({
-    #   if(input$choice_model == "Decision Tree"){
-    #     plot(trainmodel(), type = "simple")}
-    # })
-    
+
+
+
+
+
+    ################################# models ########################################
     
     
     #  this is to select the target column
@@ -2704,8 +2545,20 @@ shinyApp(
   
 
     # Train Logistic Regression model
-    train_Lr <- reactive({
-      req(input$target_column, input$trainsplit, input$radio, input$hyperparameter_tuning)
+    lr_params <- reactiveVal(list())
+
+    observe({
+      lr_params(list(
+        hyperparameter_tuning = input$hyperparameter_tuning,
+        alpha_range = if(input$hyperparameter_tuning == "grid") input$lr_alpha_range else c(1, 1),
+        lambda_range = if(input$hyperparameter_tuning == "grid") input$lr_lambda_range else c(-6, 0),
+        num_lambda = if(input$hyperparameter_tuning == "grid") input$lr_num_lambda else 100
+      ))
+    })
+
+    lr_model <- reactive({
+      req(input$train_lr)
+      req(lr_params())
       
       # Get the data and target column
       df <- data()
@@ -2730,76 +2583,151 @@ shinyApp(
                                 yname = target_col)
       }
       
-      # Prepare the training control
-      if (input$hyperparameter_tuning == 1) {  # Default parameters
-        trControl <- trainControl(method = "cv", number = 5)
-        tuneGrid <- expand.grid(alpha = 1, lambda = 0)
-      } else {  # Grid search
-        trControl <- trainControl(method = "cv", number = 5)
-        tuneGrid <- expand.grid(alpha = 1, lambda = seq(0, 1, by = 0.1))
+      # Prepare the data matrix
+      x <- as.matrix(train_data[, -which(names(train_data) == target_col)])
+      y <- train_data[[target_col]]
+      
+      params <- lr_params()
+      
+      if (params$hyperparameter_tuning == "grid") {
+        # Perform grid search
+        alpha_range <- seq(params$alpha_range[1], params$alpha_range[2], length.out = 5)
+        lambda_range <- 10^seq(params$lambda_range[1], params$lambda_range[2], length.out = params$num_lambda)
+        
+        best_model <- NULL
+        best_cvm <- Inf
+        best_alpha <- NULL
+        
+        for (alpha in alpha_range) {
+          model <- glmnet::cv.glmnet(x = x,
+                                    y = y,
+                                    alpha = alpha,
+                                    lambda = lambda_range,
+                                    family = "binomial",
+                                    type.measure = "class")
+          
+          if (min(model$cvm) < best_cvm) {
+            best_model <- model
+            best_cvm <- min(model$cvm)
+            best_alpha <- alpha
+          }
+        }
+        
+        model <- best_model
+        attr(model, "best_alpha") <- best_alpha
+        
+      } else {
+        # Use default parameters
+        model <- glmnet::cv.glmnet(x = x,
+                                  y = y,
+                                  alpha = 1,
+                                  family = "binomial",
+                                  type.measure = "class")
+        attr(model, "best_alpha") <- 1
       }
       
-      # Create the formula
-      formula <- as.formula(paste(target_col, "~ ."))
+      return(model)
+    })
+
+    # Reactive expression for model evaluation
+    lr_eval <- reactive({
+      req(lr_model())
+      model <- lr_model()
       
-      # Train the model
-      model <- train(formula, 
-                    data = train_data, 
-                    method = "glmnet",
-                    trControl = trControl,
-                    tuneGrid = tuneGrid)
+      df <- data()
+      target_col <- input$target_column
+      
+      set.seed(2001)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      test_data <- df[-train_index, ]
       
       # Make predictions on test data
-      predictions <- predict(model, newdata = test_data)
+      predictions <- predict(model, newx = as.matrix(test_data[, -which(names(test_data) == target_col)]),
+                            s = "lambda.min", type = "class")
+      prob_predictions <- predict(model, newx = as.matrix(test_data[, -which(names(test_data) == target_col)]),
+                                  s = "lambda.min", type = "response")
       
       # Calculate metrics
-      cm <- confusionMatrix(predictions, test_data[[target_col]])
+      cm <- confusionMatrix(as.factor(predictions), as.factor(test_data[[target_col]]))
       precision <- cm$byClass["Precision"]
       recall <- cm$byClass["Recall"]
       f1_score <- cm$byClass["F1"]
       
       # ROC curve data
-      roc_obj <- roc(test_data[[target_col]], as.numeric(predictions))
+      roc_obj <- roc(as.numeric(as.factor(test_data[[target_col]])) - 1, as.numeric(prob_predictions))
       
-      list(model = model, 
-          predictions = predictions, 
-          test_data = test_data, 
-          precision = precision, 
-          recall = recall, 
-          f1_score = f1_score,
-          roc_obj = roc_obj)
+      list(
+        predictions = predictions, 
+        test_data = test_data, 
+        precision = precision, 
+        recall = recall, 
+        f1_score = f1_score,
+        roc_obj = roc_obj
+      )
     })
 
-    # Render Precision
-    output$Acc_LR <- renderText({
-      lr_results <- train_Lr()
-      sprintf("%.2f", lr_results$precision)
+    # Outputs
+    output$Acc_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.2f", lr_eval()$precision) 
     })
 
-    # Render Recall
-    output$Rec_LR <- renderText({
-      lr_results <- train_Lr()
-      sprintf("%.2f", lr_results$recall)
+    output$Rec_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.2f", lr_eval()$recall) 
     })
 
-    # Render F1-score
-    output$f_score_LR <- renderText({
-      lr_results <- train_Lr()
-      sprintf("%.2f", lr_results$f1_score)
+    output$f_score_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.2f", lr_eval()$f1_score) 
     })
 
-    # Render ROC curve plot
+    output$AUC_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.3f", lr_eval()$roc_obj$auc) 
+    })
+
+    output$best_alpha_LR <- renderText({ 
+      req(lr_model())
+      sprintf("%.3f", attr(lr_model(), "best_alpha"))
+    })
+
     output$classification_lr <- renderPlot({
-      lr_results <- train_Lr()
-      plot(lr_results$roc_obj, main = "ROC Curve for Logistic Regression")
+      req(lr_eval()$roc_obj)
+      plot(lr_eval()$roc_obj, main = paste("ROC Curve for Logistic Regression (AUC =", round(lr_eval()$roc_obj$auc, 3), ")"))
       abline(a = 0, b = 1, lty = 2, col = "gray")
     })
 
-
+    output$lr_summary <- renderPrint({
+      req(lr_model())
+      summary(lr_model())
+    })
 
     # SVM
-    train_SVM <- reactive({
-      req(input$target_column, input$trainsplit, input$radio, input$hyperparameter_tuning, input$svm_kernel)
+    svm_params <- reactiveVal(list())
+
+    observe({
+      params <- list(
+        kernel = input$svm_kernel,
+        hyperparameter_tuning = input$hyperparameter_tuning,
+        cost_range = input$cost_range
+      )
+      
+      if (input$svm_kernel == "polynomial") {
+        params$degree_range <- input$degree_range
+      }
+      
+      if (input$svm_kernel %in% c("radial", "sigmoid")) {
+        params$gamma_range <- input$gamma_range
+      }
+      
+      svm_params(params)
+    })
+
+    svm_model <- reactive({
+      req(input$train_svm)
+      params <- svm_params()
+      req(params$kernel, params$hyperparameter_tuning)
       
       # Get the data and target column
       df <- data()
@@ -2824,89 +2752,120 @@ shinyApp(
                                 yname = target_col)
       }
       
-      # Prepare the training control
-      if (input$hyperparameter_tuning == 1) {  # Default parameters
-        trControl <- trainControl(method = "cv", number = 5)
-        tuneGrid <- NULL
-      } else {  # Grid search
-        trControl <- trainControl(method = "cv", number = 5)
-        
-        if (input$svm_kernel == "none") {
-          tuneGrid <- expand.grid(C = input$cost)
-        } else if (input$svm_kernel == "linear") {
-          tuneGrid <- expand.grid(C = input$cost)
-        } else if (input$svm_kernel == "polynomial") {
-          tuneGrid <- expand.grid(C = input$cost, degree = input$degree, scale = 1)
-        } else if (input$svm_kernel %in% c("radial", "sigmoid")) {
-          tuneGrid <- expand.grid(C = input$cost, sigma = input$gamma)
-        }
-      }
-      
       # Create the formula
       formula <- as.formula(paste(target_col, "~ ."))
       
-      # Train the model
-      if (input$svm_kernel == "none") {
-        model <- train(formula, 
-                      data = train_data, 
-                      method = "svmLinear",
-                      trControl = trControl,
-                      tuneGrid = tuneGrid)
+      params <- svm_params()
+      
+      if (params$hyperparameter_tuning == "grid") {
+        # Perform grid search
+        cost_range <- 10^seq(params$cost_range[1], params$cost_range[2], length.out = 5)
+        
+        if (params$kernel == "polynomial") {
+          degree_range <- seq(params$degree_range[1], params$degree_range[2], by = 1)
+          param_grid <- expand.grid(cost = cost_range, degree = degree_range)
+        } else if (params$kernel %in% c("radial", "sigmoid")) {
+          gamma_range <- 10^seq(params$gamma_range[1], params$gamma_range[2], length.out = 5)
+          param_grid <- expand.grid(cost = cost_range, gamma = gamma_range)
+        } else {
+          param_grid <- data.frame(cost = cost_range)
+        }
+        
+        # Function to train SVM and return accuracy
+        train_and_evaluate <- function(cost, degree = NULL, gamma = NULL) {
+          svm_params <- list(formula = formula, data = train_data, kernel = params$kernel, cost = cost)
+          if (!is.null(degree)) svm_params$degree <- degree
+          if (!is.null(gamma)) svm_params$gamma <- gamma
+          
+          model <- do.call(e1071::svm, svm_params)
+          predictions <- predict(model, newdata = train_data)
+          conf_matrix <- table(train_data[[target_col]], predictions)
+          accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+          return(accuracy)
+        }
+        
+        # Perform grid search
+        grid_results <- apply(param_grid, 1, function(params) {
+          do.call(train_and_evaluate, as.list(params))
+        })
+        
+        best_params <- param_grid[which.max(grid_results), ]
+        
+        # Train final model with best parameters
+        svm_params <- c(list(formula = formula, data = train_data, kernel = params$kernel), best_params)
+        model <- do.call(e1071::svm, svm_params)
+        
       } else {
-        model <- train(formula, 
-                      data = train_data, 
-                      method = "svmRadial",
-                      trControl = trControl,
-                      tuneGrid = tuneGrid,
-                      kernel = input$svm_kernel)
+        # Use default parameters
+        model <- e1071::svm(formula, data = train_data, kernel = params$kernel)
       }
+      
+      return(model)
+    })
+
+    # Reactive expression for model evaluation
+    model_eval <- reactive({
+      req(svm_model())
+      model <- svm_model()
+      
+      df <- data()
+      target_col <- input$target_column
+      
+      set.seed(2001)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      test_data <- df[-train_index, ]
       
       # Make predictions on test data
       predictions <- predict(model, newdata = test_data)
       
       # Calculate metrics
-      cm <- confusionMatrix(predictions, test_data[[target_col]])
+      cm <- confusionMatrix(predictions, as.factor(test_data[[target_col]]))
       precision <- cm$byClass["Precision"]
       recall <- cm$byClass["Recall"]
       f1_score <- cm$byClass["F1"]
       
       # ROC curve data
-      roc_obj <- roc(test_data[[target_col]], as.numeric(predictions))
+      roc_obj <- roc(as.numeric(as.factor(test_data[[target_col]])) - 1, as.numeric(as.factor(predictions)) - 1)
       
-      list(model = model, 
-          predictions = predictions, 
-          test_data = test_data, 
-          precision = precision, 
-          recall = recall, 
-          f1_score = f1_score,
-          roc_obj = roc_obj)
+      list(
+        predictions = predictions, 
+        test_data = test_data, 
+        precision = precision, 
+        recall = recall, 
+        f1_score = f1_score,
+        roc_obj = roc_obj
+      )
     })
 
-    # Render Precision
-    output$Acc_SVM <- renderText({
-      svm_results <- train_SVM()
-      sprintf("%.2f", svm_results$precision)
+    # Outputs
+    output$Acc_SVM <- renderText({ 
+      req(model_eval())
+      sprintf("%.2f", model_eval()$precision) 
     })
 
-    # Render Recall
-    output$Rec_SVM <- renderText({
-      svm_results <- train_SVM()
-      sprintf("%.2f", svm_results$recall)
+    output$Rec_SVM <- renderText({ 
+      req(model_eval())
+      sprintf("%.2f", model_eval()$recall) 
     })
 
-    # Render F1-score
-    output$f_score_SVM <- renderText({
-      svm_results <- train_SVM()
-      sprintf("%.2f", svm_results$f1_score)
+    output$f_score_SVM <- renderText({ 
+      req(model_eval())
+      sprintf("%.2f", model_eval()$f1_score) 
     })
 
-    # Render ROC curve plot
     output$classification_svm <- renderPlot({
-      svm_results <- train_SVM()
-      plot(svm_results$roc_obj, main = "ROC Curve for SVM")
+      req(model_eval()$roc_obj)
+      plot(model_eval()$roc_obj, main = paste("ROC Curve for SVM (AUC =", round(model_eval()$roc_obj$auc, 3), ")"))
       abline(a = 0, b = 1, lty = 2, col = "gray")
     })
-    
+
+    output$svm_summary <- renderPrint({
+      req(svm_model())
+      summary(svm_model())
+    })
+
+
+
 
     # Decision Tree
 
@@ -2998,9 +2957,10 @@ shinyApp(
     # Render ROC curve plot
     output$Classification_DT <- renderPlot({
       dt_results <- train_DT()
-      plot(dt_results$roc_obj, main = "ROC Curve for Decision Tree")
+      plot(dt_results$roc_obj, main = paste("ROC Curve for Decision Tree (AUC =", round(dt_results$roc_obj$auc, 3), ")"))
       abline(a = 0, b = 1, lty = 2, col = "gray")
     })
+
 
     # Render Decision Tree plot
     output$DT_tree <- renderPlot({
@@ -3046,7 +3006,9 @@ shinyApp(
       
     })
     
-    
+  
+
+  ####################################################################################
     
     # Statistical Tests
     
