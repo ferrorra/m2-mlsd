@@ -1040,6 +1040,9 @@ shinyApp(
           selectInput("target_column", "Select Target Column:", 
             choices = NULL,  # We'll update this dynamically
             selected = NULL),
+          uiOutput("feature_selection_ui"),  # Dynamic UI for feature selection
+          actionButton("select_all_features", "Select All Features"),
+          actionButton("deselect_all_features", "Deselect All Features"),
           sliderInput("trainsplit", "Training portion:",
                       min = 0.05, max = 0.95,
                       value = 0.7, step = 0.05
@@ -1048,7 +1051,7 @@ shinyApp(
           radioButtons("radio",
                       label = "Select",
                       choices = list("Over Sampling" = 1, "Under Sampling" = 2, "No Sampling" = 3),
-                      selected = 1,
+                      selected = 3,
                       inline = TRUE,
                       width = "100%"),
           
@@ -1074,26 +1077,27 @@ shinyApp(
                         column(3, h4("Precision: "), textOutput("Acc_LR")),
                         column(3, h4("Recall: "), textOutput("Rec_LR")),
                         column(3, h4("F1_score:"), textOutput("f_score_LR")),
-                        column(3, h4("Best Alpha:"), textOutput("best_alpha_LR"))
+                        # column(3, h4("Best Alpha:"), textOutput("best_alpha_LR"))
                       ),
                       plotOutput("classification_lr"),
                       verbatimTextOutput("lr_summary")
                     ),
                     tabPanel("Decision Tree", 
-                              h1("Decision Tree"),
-                              conditionalPanel(
-                                condition = "input.hyperparameter_tuning == 'grid'",
-                                sliderInput("dt_cp", "Complexity Parameter:", min = 0.001, max = 0.1, value = 0.01, step = 0.001),
-                                sliderInput("dt_minsplit", "Min Split:", min = 5, max = 50, value = 20, step = 5)
-                              ),
-                              fluidRow(
-                                column(4, h4("Precision: "), textOutput("Acc_DT")),
-                                column(4, h4("Recall: "), textOutput("Rec_DT")),
-                                column(4, h4("F1_score:"), textOutput("f_score_DT"))
-                              ),
-                              fluidRow(column(12, h4("Decision tree:"), plotOutput("DT_tree"))),
-                              h4("PR Curve:"),
-                              plotOutput("Classification_DT")
+                      h1("Decision Tree"),
+                      conditionalPanel(
+                        condition = "input.hyperparameter_tuning == 'grid'",
+                        sliderInput("dt_cp", "Complexity Parameter range:", min = 0.001, max = 0.1, value = c(0.001, 0.1), step = 0.001),
+                        sliderInput("dt_minsplit", "Min Split range:", min = 5, max = 50, value = c(5, 50), step = 5)
+                      ),
+                      actionButton("train_dt", "Train Decision Tree Model"),
+                      fluidRow(
+                        column(4, h4("Precision: "), textOutput("Acc_DT")),
+                        column(4, h4("Recall: "), textOutput("Rec_DT")),
+                        column(4, h4("F1_score:"), textOutput("f_score_DT"))
+                      ),
+                      fluidRow(column(12, h4("Decision tree:"), plotOutput("DT_tree"))),
+                      h4("ROC Curve:"),
+                      plotOutput("Classification_DT")
                     ),
                     tabPanel("SVM", 
                       fluidRow(
@@ -1138,75 +1142,6 @@ shinyApp(
         )
       )
 
-      # tabItem(
-      #   tabName = "classification",
-      #   fluidRow(
-      #     box(background = "black", textOutput(("ModName")))),
-      #   fluidRow(
-          
-      #     selectInput(inputId = "choice_model", label ="Choose a Model", choices = list("Logistic Regression",
-      #                                                                                   "LDA", "Naive Bayes", "KNN", "Support Vector Machine", "Decision Tree"), selected = "Logistic
-      #                 Regression", multiple = FALSE),
-          
-      #     conditionalPanel(condition = "input.choice_model == 'Support Vector Machine'",
-      #                      selectInput(inputId = "choice_type", label ="Choose a Machine Type", choices = list("C-classification",
-      #                                                                                                          "nu-classification"), selected = "C-classification", multiple = FALSE),
-      #                      selectInput(inputId = "choice_kernel", label ="Choose a Kernel Type", choices = list("linear",
-      #                                                                                                           "polynomial", "radial", "sigmoid"), selected = "polynomial", multiple = FALSE)),
-      #     conditionalPanel(condition = "input.choice_model == 'Decision Tree'",
-      #                      sliderInput(inputId = "choice_threshold", label ="Choose Test Statistic Threshold", min = 0.90, max =
-      #                                    0.99, value = 0.95, step = 0.01),
-      #                      sliderInput(inputId = "choice_depth", label ="Choose Max Tree Depth", min = 1, max = 30, value = 6,
-      #                                  step = 1),
-      #                      sliderInput(inputId = "choice_split", label ="Choose Min Threshold for Splitting", min = 10, max = 200,
-      #                                  value = 20, step = 1)),
-          
-          
-      #     conditionalPanel(condition = "input.choice_model == 'Logistic Regression'",
-      #                      box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-      #                          verbatimTextOutput("ModSummaryLR"), width = 8),
-      #                      box(title = "Feature Selection Parameters", solidHeader = TRUE, background = "olive", status =
-      #                            "primary", checkboxGroupInput(inputId = "choice_indvar", label ="Choose Independant Variables", 
-      #                                                          choices = list( "Distance From Home" = "DistanceFromHome",  "Monthly Income" = "MonthlyIncome", "Number of Companies Worked" =
-      #                                                                            "NumCompaniesWorked",  "Training Times Last Year" = "TrainingTimesLastYear", "Years Since Last Promotion" = "YearsSinceLastPromotion", "Years With Current
-      #                                                                          Manager" = "YearsWithCurrManager", 
-      #                                                                          "Department.Sales" = " Department.Sales",
-      #                                                                          "Education.College" = "Education.College", "Education.Bachelor" = "Education.Bachelor",
-      #                                                                          "Education.Master" = "Education.Master", "Education.Doctor" = "Education.Doctor",
-      #                                                                          "EducationField.Marketing" =
-      #                                                                            "EducationField.Marketing",
-      #                                                                          "EducationField.Other" = "EducationField.Other", "Gender.Male" = "Gender.Male", "MaritalStatus.Married" =
-      #                                                                            "MaritalStatus.Married", "MaritalStatus.Single" = "MaritalStatus.Single"), selected = list( "Distance From Home" = "DistanceFromHome",
-      #                                                                                                                                                                        "Monthly Income" = "MonthlyIncome", "Number of Companies
-      #                                                                                                                                                                        Worked" = "NumCompaniesWorked", "Percent Salary Hike" = "PercentSalaryHike",  "Total Working
-      #                                                                                                                                                                        Years" = "TotalWorkingYears", "Training Times Last Year" = "TrainingTimesLastYear",  "Years At Company" = "YearsAtCompany", "Years In Current Role" =
-      #                                                                                                                                                                          "YearsInCurrentRole", "Years Since Last Promotion" = "YearsSinceLastPromotion", "Years With Current
-      #                                                                                                                                                                        Manager" = "YearsWithCurrManager",
-      #                                                                                                                                                                        "Department.Sales" = " Department.Sales",
-      #                                                                                                                                                                        "Education.College" = "Education.College", "Education.Bachelor" = "Education.Bachelor",
-      #                                                                                                                                                                        "Education.Master" = "Education.Master", "Education.Doctor" = "Education.Doctor",
-      #                                                                                                                                                                        "EducationField.Marketing" =
-      #                                                                                                                                                                          "EducationField.Marketing", "EducationField.Medical" = "EducationField.Medical",
-      #                                                                                                                                                                        "EducationField.Other" = "EducationField.Other", "Gender.Male" = "Gender.Male", "MaritalStatus.Married" =
-      #                                                                                                                                                                          "MaritalStatus.Married", "MaritalStatus.Single" = "MaritalStatus.Single")), width = 4)),
-      #     conditionalPanel(condition = "input.choice_model == 'LDA'",
-      #                      box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-      #                          verbatimTextOutput("ModSummaryLDA"), width = 12)),
-      #     conditionalPanel(condition = "input.choice_model == 'Naive Bayes'",
-      #                      box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-      #                          verbatimTextOutput("ModSummaryNB"), width = 12)),
-      #     conditionalPanel(condition = "input.choice_model == 'KNN'",
-      #                      box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-      #                          verbatimTextOutput("ModSummaryKNN"), width = 12)),
-      #     conditionalPanel(condition = "input.choice_model == 'Support Vector Machine'",
-      #                      box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-      #                          verbatimTextOutput("ModSummarySVM"), width = 12)),
-      #     conditionalPanel(condition = "input.choice_model == 'Decision Tree'",
-      #                      box(title = "Decision Tree Chart", solidHeader = TRUE, background = "aqua", status = "primary",
-      #                          plotOutput("DTREE"), width = 12))
-      #     ))
-      
-      
       
               )
                                   )
@@ -2423,11 +2358,6 @@ shinyApp(
     })
     
     
-    
-    
-    
-    
-    
     ## renommer la colonne ###
     output$renameList<- renderUI({
       selectInput('renameList', 'Le choix de la variable ',colnames(data()))
@@ -2523,21 +2453,53 @@ shinyApp(
       }
     })
     
+########### models part ####################################
     
+    # This is to select the target column
 
-
-
-
-
-    ################################# models ########################################
-    
-    
-    #  this is to select the target column
     observe({
       req(data())
       updateSelectInput(session, "target_column",
                         choices = names(data()),
                         selected = names(data())[1])
+    })
+
+    # This is to create the dynamic UI for feature selection
+    output$feature_selection_ui <- renderUI({
+      req(data())
+      req(input$target_column)
+      all_columns <- names(data())
+      feature_columns <- all_columns[all_columns != input$target_column]
+      
+      selectInput("feature_columns", "Select Feature Columns:",
+                  choices = feature_columns,
+                  multiple = TRUE,
+                  selected = feature_columns)
+    })
+
+    # Handle "Select All Features" button
+    observeEvent(input$select_all_features, {
+      req(data())
+      all_columns <- names(data())
+      feature_columns <- all_columns[all_columns != input$target_column]
+      updateSelectInput(session, "feature_columns",
+                        selected = feature_columns)
+    })
+
+    # Handle "Deselect All Features" button
+    observeEvent(input$deselect_all_features, {
+      updateSelectInput(session, "feature_columns",
+                        selected = character(0))
+    })
+
+    # Update feature selection when target column changes
+    observe({
+      req(input$target_column)
+      all_columns <- names(data())
+      feature_columns <- all_columns[all_columns != input$target_column]
+      updateSelectInput(session, "feature_columns",
+                        choices = feature_columns,
+                        selected = intersect(input$feature_columns, feature_columns))
     })
     
     
@@ -2559,32 +2521,34 @@ shinyApp(
     lr_model <- reactive({
       req(input$train_lr)
       req(lr_params())
+      req(input$feature_columns)  # Ensure feature columns are selected
       
-      # Get the data and target column
+      # Get the data, target column, and selected features
       df <- data()
       target_col <- input$target_column
+      feature_cols <- input$feature_columns
       
       # Ensure the target column is a factor
       df[[target_col]] <- as.factor(df[[target_col]])
       
       set.seed(2001)
       train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
-      train_data <- df[train_index, ]
-      test_data <- df[-train_index, ]
+      train_data <- df[train_index, c(target_col, feature_cols)]
+      test_data <- df[-train_index, c(target_col, feature_cols)]
       
       # Handle class imbalance
       if (input$radio == 1) {  # Over Sampling
-        train_data <- upSample(x = train_data[, -which(names(train_data) == target_col)],
+        train_data <- upSample(x = train_data[, feature_cols],
                               y = train_data[[target_col]],
                               yname = target_col)
       } else if (input$radio == 2) {  # Under Sampling
-        train_data <- downSample(x = train_data[, -which(names(train_data) == target_col)],
+        train_data <- downSample(x = train_data[, feature_cols],
                                 y = train_data[[target_col]],
                                 yname = target_col)
       }
       
       # Prepare the data matrix
-      x <- as.matrix(train_data[, -which(names(train_data) == target_col)])
+      x <- as.matrix(train_data[, feature_cols])
       y <- train_data[[target_col]]
       
       params <- lr_params()
@@ -2632,19 +2596,21 @@ shinyApp(
     # Reactive expression for model evaluation
     lr_eval <- reactive({
       req(lr_model())
+      req(input$feature_columns)  # Ensure feature columns are selected
       model <- lr_model()
       
       df <- data()
       target_col <- input$target_column
+      feature_cols <- input$feature_columns
       
       set.seed(2001)
       train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
-      test_data <- df[-train_index, ]
+      test_data <- df[-train_index, c(target_col, feature_cols)]
       
       # Make predictions on test data
-      predictions <- predict(model, newx = as.matrix(test_data[, -which(names(test_data) == target_col)]),
+      predictions <- predict(model, newx = as.matrix(test_data[, feature_cols]),
                             s = "lambda.min", type = "class")
-      prob_predictions <- predict(model, newx = as.matrix(test_data[, -which(names(test_data) == target_col)]),
+      prob_predictions <- predict(model, newx = as.matrix(test_data[, feature_cols]),
                                   s = "lambda.min", type = "response")
       
       # Calculate metrics
@@ -2666,7 +2632,9 @@ shinyApp(
       )
     })
 
-    # Outputs
+
+
+      # Outputs
     output$Acc_LR <- renderText({ 
       req(lr_eval())
       sprintf("%.2f", lr_eval()$precision) 
@@ -2687,10 +2655,10 @@ shinyApp(
       sprintf("%.3f", lr_eval()$roc_obj$auc) 
     })
 
-    output$best_alpha_LR <- renderText({ 
-      req(lr_model())
-      sprintf("%.3f", attr(lr_model(), "best_alpha"))
-    })
+    # output$best_alpha_LR <- renderText({ 
+    #   req(lr_model())
+    #   sprintf("%.3f", attr(lr_model(), "best_alpha"))
+    # })
 
     output$classification_lr <- renderPlot({
       req(lr_eval()$roc_obj)
@@ -2733,6 +2701,10 @@ shinyApp(
       df <- data()
       target_col <- input$target_column
       
+      # Apply feature selection
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
+      
       # Ensure the target column is a factor
       df[[target_col]] <- as.factor(df[[target_col]])
       
@@ -2752,8 +2724,8 @@ shinyApp(
                                 yname = target_col)
       }
       
-      # Create the formula
-      formula <- as.formula(paste(target_col, "~ ."))
+      # Create the formula using only selected features
+      formula <- as.formula(paste(target_col, "~", paste(selected_features, collapse = " + ")))
       
       params <- svm_params()
       
@@ -2811,6 +2783,10 @@ shinyApp(
       df <- data()
       target_col <- input$target_column
       
+      # Apply feature selection to test data
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
+      
       set.seed(2001)
       train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
       test_data <- df[-train_index, ]
@@ -2867,14 +2843,32 @@ shinyApp(
 
 
 
-    # Decision Tree
 
-    train_DT <- reactive({
-      req(input$target_column, input$trainsplit, input$radio, input$hyperparameter_tuning)
+    # Decision Tree
+    dt_params <- reactiveVal(list())
+
+    observe({
+      params <- list(
+        hyperparameter_tuning = input$hyperparameter_tuning,
+        cp = input$dt_cp,
+        minsplit = input$dt_minsplit
+      )
+      
+      dt_params(params)
+    })
+
+    dt_model <- reactive({
+      req(input$train_dt)
+      params <- dt_params()
+      req(params$hyperparameter_tuning)
       
       # Get the data and target column
       df <- data()
       target_col <- input$target_column
+      
+      # Apply feature selection
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
       
       # Ensure the target column is a factor
       df[[target_col]] <- as.factor(df[[target_col]])
@@ -2895,97 +2889,111 @@ shinyApp(
                                 yname = target_col)
       }
       
-      # Prepare the training control
-      if (input$hyperparameter_tuning == 1) {  # Default parameters
-        trControl <- trainControl(method = "cv", number = 5)
-        tuneGrid <- NULL
-      } else {  # Grid search
-        trControl <- trainControl(method = "cv", number = 5)
-        tuneGrid <- expand.grid(cp = input$dt_cp)
+      # Create the formula using only selected features
+      formula <- as.formula(paste(target_col, "~", paste(selected_features, collapse = " + ")))
+      
+      if (params$hyperparameter_tuning == "grid") {
+        # Perform grid search
+        cp_range <- seq(params$cp[1], params$cp[2], length.out = 10)
+        minsplit_range <- seq(params$minsplit[1], params$minsplit[2], by = 5)
+        
+        param_grid <- expand.grid(cp = cp_range, minsplit = minsplit_range)
+        
+        # Function to train Decision Tree and return accuracy
+        train_and_evaluate <- function(cp, minsplit) {
+          model <- rpart(formula, data = train_data, method = "class",
+                        control = rpart.control(cp = cp, minsplit = minsplit))
+          predictions <- predict(model, newdata = train_data, type = "class")
+          conf_matrix <- table(train_data[[target_col]], predictions)
+          accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+          return(accuracy)
+        }
+        
+        # Perform grid search
+        grid_results <- apply(param_grid, 1, function(params) {
+          do.call(train_and_evaluate, as.list(params))
+        })
+        
+        best_params <- param_grid[which.max(grid_results), ]
+        
+        # Train final model with best parameters
+        model <- rpart(formula, data = train_data, method = "class",
+                      control = rpart.control(cp = best_params$cp, minsplit = best_params$minsplit))
+        
+      } else {
+        # Use default parameters
+        model <- rpart(formula, data = train_data, method = "class")
       }
       
-      # Create the formula
-      formula <- as.formula(paste(target_col, "~ ."))
+      return(model)
+    })
+
+    # Reactive expression for model evaluation
+    dt_eval <- reactive({
+      req(dt_model())
+      model <- dt_model()
       
-      # Train the model
-      model <- train(formula, 
-                    data = train_data, 
-                    method = "rpart",
-                    trControl = trControl,
-                    tuneGrid = tuneGrid,
-                    control = rpart.control(minsplit = input$dt_minsplit))
+      df <- data()
+      target_col <- input$target_column
+      
+      # Apply feature selection to test data
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
+      
+      set.seed(123)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      test_data <- df[-train_index, ]
       
       # Make predictions on test data
-      predictions <- predict(model, newdata = test_data)
+      predictions <- predict(model, newdata = test_data, type = "class")
       
       # Calculate metrics
-      cm <- confusionMatrix(predictions, test_data[[target_col]])
+      cm <- confusionMatrix(predictions, as.factor(test_data[[target_col]]))
       precision <- cm$byClass["Precision"]
       recall <- cm$byClass["Recall"]
       f1_score <- cm$byClass["F1"]
       
       # ROC curve data
-      roc_obj <- roc(test_data[[target_col]], as.numeric(predictions))
+      roc_obj <- roc(as.numeric(as.factor(test_data[[target_col]])) - 1, 
+                    as.numeric(predict(model, newdata = test_data, type = "prob")[,2]))
       
-      list(model = model, 
-          predictions = predictions, 
-          test_data = test_data, 
-          precision = precision, 
-          recall = recall, 
-          f1_score = f1_score,
-          roc_obj = roc_obj)
+      list(
+        predictions = predictions, 
+        test_data = test_data, 
+        precision = precision, 
+        recall = recall, 
+        f1_score = f1_score,
+        roc_obj = roc_obj,
+        model = model
+      )
+    })
+    # Outputs
+    output$Acc_DT <- renderText({ 
+      req(dt_eval())
+      sprintf("%.2f", dt_eval()$precision) 
     })
 
-    # Render Precision
-    output$Acc_DT <- renderText({
-      dt_results <- train_DT()
-      sprintf("%.2f", dt_results$precision)
+    output$Rec_DT <- renderText({ 
+      req(dt_eval())
+      sprintf("%.2f", dt_eval()$recall) 
     })
 
-    # Render Recall
-    output$Rec_DT <- renderText({
-      dt_results <- train_DT()
-      sprintf("%.2f", dt_results$recall)
+    output$f_score_DT <- renderText({ 
+      req(dt_eval())
+      sprintf("%.2f", dt_eval()$f1_score) 
     })
 
-    # Render F1-score
-    output$f_score_DT <- renderText({
-      dt_results <- train_DT()
-      sprintf("%.2f", dt_results$f1_score)
-    })
-
-    # Render ROC curve plot
     output$Classification_DT <- renderPlot({
-      dt_results <- train_DT()
-      plot(dt_results$roc_obj, main = paste("ROC Curve for Decision Tree (AUC =", round(dt_results$roc_obj$auc, 3), ")"))
+      req(dt_eval()$roc_obj)
+      plot(dt_eval()$roc_obj, main = paste("ROC Curve for Decision Tree (AUC =", round(dt_eval()$roc_obj$auc, 3), ")"))
       abline(a = 0, b = 1, lty = 2, col = "gray")
     })
 
-
-    # Render Decision Tree plot
     output$DT_tree <- renderPlot({
-      dt_results <- train_DT()
-      rpart.plot(dt_results$model$finalModel, 
+      req(dt_eval()$model)
+      rpart.plot(dt_eval()$model, 
                 box.palette = "auto", 
                 main = "Decision Tree")
-    })
-
-    # Render Application Data Table
-    output$Application <- DT::renderDataTable({
-      dt_results <- train_DT()
-      
-      # Combine test data with predictions
-      application_data <- cbind(dt_results$test_data, Prediction = dt_results$predictions)
-      
-      # Create a datatable
-      DT::datatable(application_data,
-                    options = list(pageLength = 10, 
-                                  scrollX = TRUE, 
-                                  scrollY = "300px",
-                                  searching = TRUE,
-                                  ordering = TRUE),
-                    filter = 'top',
-                    rownames = FALSE)
     })
     
     
@@ -3006,9 +3014,7 @@ shinyApp(
       
     })
     
-  
-
-  ####################################################################################
+    
     
     # Statistical Tests
     
