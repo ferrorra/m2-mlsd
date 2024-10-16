@@ -127,7 +127,6 @@ library(caTools)
 library(randomForest)
 library(plyr)
 library(corrplot)
-library(PRROC)
 library(rpart.plot)
 #library("ElemStatLearn")
 library(dplyr)
@@ -137,7 +136,7 @@ library(psych)
 library(factoextra)
 library(FactoMineR)
 library(summarytools)
-
+library(glmnet)
 library(BSDA)
 library(hrbrthemes)
 library(performance)
@@ -164,7 +163,6 @@ library(shinythemes)
 library(fontawesome)
 library(shinycssloaders)
 
-
 shinyApp(
   ui = dashboardPage(
     dashboardHeader(title = "Projet Dashboard M2- Amelioration M1"),
@@ -184,10 +182,9 @@ shinyApp(
         menuItem("Accueil", tabName = "accueill", icon = icon("home")),
         menuItem("Dataset", tabName = "overview", icon = icon("table"),
                  menuSubItem("Overview", tabName = "Dataset", icon = icon("list-alt")),
-                 menuSubItem("Informaions données", tabName = "f", icon = icon("list-alt")),
+                 menuSubItem("Informations données", tabName = "f", icon = icon("list-alt")),
                  menuSubItem("Summary détaillé", tabName = "Sm", icon = icon("chart-bar"))
-                 
-                 ),
+        ),
         menuItem("Prétraitement des données", tabName = "Pd", icon = icon("table"),
                  menuSubItem("Valeurs manquantes", tabName = "imp", icon=icon("exclamation-triangle")),
                  menuSubItem("Valeurs abérrantes", tabName = "out", icon=icon("exclamation-triangle")),
@@ -201,19 +198,22 @@ shinyApp(
         menuItem("Analyse Bivariée", tabName="b", icon=icon("chart-pie"),
                  menuSubItem("Quantitative VS Quantitative", tabName = "Bv", icon=icon("dice-two")),
                  menuSubItem("Quantitative VS Qualitative", tabName = "vs", icon=icon("chart-pie")),
-                 menuSubItem("Qualitative VS Qualitative", tabName = "vs2", icon=icon("chart-pie")),
-                 menuSubItem("Tests statistiques", tabName = "stest", icon=icon("calculator"))
+                 menuSubItem("Qualitative VS Qualitative", tabName = "vs2", icon=icon("chart-pie"))
         ),
         menuItem("Analyse Multivariée", tabName = "exp", icon = icon("search"),
                  menuSubItem("Matrice de Corrélation", tabName = "cr", icon=icon("project-diagram")),
                  menuSubItem("Cercle de Corrélation", tabName = "crce", icon=icon("circle"))
         ),
-        menuItem("Modeles", tabName="ml", icon=icon("tasks"))
+        menuItem("Modeles", tabName="ml", icon=icon("tasks")),
+        # New menu item for the report
+        menuItem("Rapport", tabName = "report", icon = icon("file-alt"),
+                 menuSubItem("Dataset 1", tabName = "report1", icon = icon("file")),
+                 menuSubItem("Dataset 2", tabName = "report2", icon = icon("file")),
+                 menuSubItem("Dataset 3", tabName = "report3", icon = icon("file"))
+        )
       ),
       downloadButton("Download", "Télécharger Dataset"),
       actionButton("button", "Rénitialisation Dataset")
-      
-      
     ),
     
     
@@ -245,60 +245,7 @@ shinyApp(
                   )
                 )
         ),
-        tabItem(tabName = "stest",
-                fluidPage(
-                  tabPanel("Statistical Tests", 
-                           sidebarLayout(
-                             sidebarPanel(
-                               uiOutput('cols7'),
-                               uiOutput('cols8'),
-                               radioButtons("normaltest", "Select Method:", choices = c("A-D-Test", "Shapiro", "KS-Test", "MV-Shapiro")),
-                               hr(),
-                               helpText("For more details visit:"),
-                               a(href="https://en.wikipedia.org/wiki/Anderson%E2%80%93Darling_test", "Anderson-Darling test"), br(),
-                               a(href="https://en.wikipedia.org/wiki/Shapiro%E2%80%93Wilk_test", "Shapiro-Wilk test"), br(),
-                               a(href="https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test", "Kolmogorov-Smirnov test"), br(),
-                               
-                               hr()
-                             ), 
-                             mainPanel(
-                               h3("Statistical Tests"),
-                               fluidRow(
-                                 div(
-                                   plotOutput("qqp")
-                                 ),
-                                 div(
-                                   verbatimTextOutput("normtest")
-                                 )
-                               )
-                             )
-                             
-                           )
-                  ),
-                  
-                  tabPanel("Correlation", 
-                           sidebarLayout(
-                             sidebarPanel(
-                               uiOutput('cols9'),
-                               uiOutput('cols10'),
-                               radioButtons("cormethod", "Select Method:", choices = c("Covariance", "KarlPearson", "Spearman", "Kendals")),
-                               hr(),
-                               helpText("For Details Visit:"),
-                               a(href="https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient", "Karl Pearson Correlation Test"),
-                               hr()
-                             ), 
-                             mainPanel(
-                               h3("Covariance & Correlation"),
-                               verbatimTextOutput("cor_t")
-                             )
-                             
-                           )
-                           
-                  )
-                
-                
-                )
-        ),
+
         tabItem(tabName = "imp",
                 fluidPage(
                   column(12,
@@ -589,7 +536,7 @@ shinyApp(
                   tabBox(
                     width = 12,
                     tabPanel("Variables",
-                             tableOutput("caract_quantitative"),
+                             tableOutput("variable_characteristics"),
                              textOutput("rania")
    
                     )
@@ -608,20 +555,20 @@ shinyApp(
       tabItem(tabName = "cr",
               fluidPage(
                 column(12,
-                       tabBox(width = 12,
+                      tabBox(width = 12,
                               tabPanel("Heatmap correlation",
-                                       textOutput("soustxt"),
-                                       textOutput("Theatmap"),
-                                       tags$head(tags$style("#Theatmap{color:  red;
+                                      textOutput("soustxt"),
+                                      textOutput("Theatmap"),
+                                      tags$head(tags$style("#Theatmap{color: red;
                                                             font-size: 20px;
                                                             font-style: italic;
                                                             }"
-                                         )
-                                       ),
-                                       plotlyOutput("heatmap")
-                                       )
+                                        )
+                                      ),
+                                      plotlyOutput("heatmap")
+                                      )
                               
-                                       )
+                                      )
                               )
                 
                 )
@@ -688,165 +635,190 @@ shinyApp(
                 
                 
               )
-      ),
-      
+      ),      
       tabItem(tabName = "Unv",
         fluidPage(
+          tags$head(
+            tags$style(HTML("
+              .box {border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+              .box-header {border-radius: 5px 5px 0 0;}
+              .plot-container {height: 400px;}
+              .select-container {padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-bottom: 15px;}
+            "))
+          ),
           fluidRow(  
             column( 
               width = 12,
               tabBox(
                 width = 12,
-                title = "Variables",
+                title = "Variables Analysis",
                 id = "tabset1", 
                 tabPanel("Quantitative", value = "tab_quantitative",
-                        uiOutput('quantlist'),
-                        verbatimTextOutput(outputId = "summary")
+                  div(class = "select-container",
+                    uiOutput('quantlist')
+                  ),
+                  verbatimTextOutput(outputId = "summary")
                 ),
                 tabPanel("Qualitative", value = "tab_qualitative",
-                        uiOutput('qualist'))
+                  div(class = "select-container",
+                    uiOutput('qualist')
+                  )
+                ),
+                tabPanel("Churn Analysis", value = "tab_churn",
+                  div(class = "select-container",
+                    fluidRow(
+                      column(width = 6,
+                        selectInput("churn_var", "Select Churn Variable", choices = NULL)
+                      ),
+                      column(width = 6,
+                        selectInput("churn_compare_var", "Select Comparison Variable", choices = NULL)
+                      )
+                    )
+                  )
+                )
               )
-            ),
-            conditionalPanel(
-              condition = "input.tabset1 == 'tab_quantitative'",
+            )
+          ),
+          conditionalPanel(
+            condition = "input.tabset1 == 'tab_quantitative'",
+            fluidRow(
               column(
-                width = 12,
+                width = 6,
                 box(
+                  width = NULL,
                   title = "Diagramme en bâtons des effectifs", status = "primary", solidHeader = TRUE,
                   collapsible = TRUE,
-                  plotOutput(outputId = "effectifsDiag")
-                ),
-                box(
-                  title = "Boîte à moustaches", status = "primary", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "boiteMoustaches")
+                  div(class = "plot-container", plotOutput(outputId = "effectifsDiag"))
                 )
               ),
               column(
-                width = 12,
+                width = 6,
                 box(
-                  title = "Histogramme d'effectifs", status = "info", solidHeader = TRUE,
+                  width = NULL,
+                  title = "Boîte à moustaches", status = "info", solidHeader = TRUE,
                   collapsible = TRUE,
-                  plotOutput(outputId = "effectifsHist")
-                ),
+                  div(class = "plot-container", plotOutput(outputId = "boiteMoustaches"))
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
                 box(
-                  title = "Caractéristiques de tendance centrale et de dispersion", status = "info", solidHeader = TRUE,
+                  width = NULL,
+                  title = "Histogramme d'effectifs", status = "success", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  div(class = "plot-container", plotOutput(outputId = "effectifsHist"))
+                )
+              ),
+              column(
+                width = 6,
+                box(
+                  width = NULL,
+                  title = "Caractéristiques centrales et de dispersion", status = "warning", solidHeader = TRUE,
                   collapsible = TRUE,
                   tableOutput(outputId = "centreDisp")
                 )
-              ),
+              )
+            ),
+            fluidRow(
               column(
                 width = 12,
                 box(
-                  width = 12,
-                  title = "Courbe cumulative", status = "info", solidHeader = TRUE,
+                  width = NULL,
+                  title = "Courbe cumulative", status = "danger", solidHeader = TRUE,
                   collapsible = TRUE,
-                  plotOutput(outputId = "effectifsCumCurve")
+                  div(class = "plot-container", plotOutput(outputId = "effectifsCumCurve"))
                 )
-              ),
-              # New plots for quantitative variables
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.tabset1 == 'tab_qualitative'",
+            fluidRow(
               column(
-                width = 12,
+                width = 6,
                 box(
-                  title = "Diagramme Quantile-Quantile", status = "success", solidHeader = TRUE,
+                  width = NULL,
+                  title = "Diagramme en barres", status = "primary", solidHeader = TRUE,
                   collapsible = TRUE,
-                  plotOutput(outputId = "qqPlot")
-                ),
-                box(
-                  title = "Graphique de densité", status = "success", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "densityPlot")
-                )
-              ),
-              column(
-                width = 12,
-                box(
-                  title = "Diagramme en violon", status = "warning", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "violinPlot")
-                ),
-                box(
-                  title = "Nuage de points", status = "warning", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "dotPlot")
+                  div(class = "plot-container", plotOutput(outputId = "barPlot"))
                 )
               ),
               column(
-                width = 12,
+                width = 6,
                 box(
-                  title = "Diagramme tige-et-feuille", status = "danger", solidHeader = TRUE,
+                  width = NULL,
+                  title = "Diagramme circulaire", status = "info", solidHeader = TRUE,
                   collapsible = TRUE,
-                  verbatimTextOutput(outputId = "stemLeafPlot")
-                ),
-                box(
-                  title = "Graphique ECDF", status = "danger", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "ecdfPlot")
-                )
-              ),
-              column(
-                width = 12,
-                box(
-                  title = "Graphique en peigne", status = "primary", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "rugPlot")
-                ),
-                box(
-                  title = "Graphique en bandes", status = "primary", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "stripPlot")
-                )
-              ),
-              column(
-                width = 12,
-                box(
-                  width = 12,
-                  title = "Nuage de points (Scatter Plot)", status = "info", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "scatterPlot")
+                  div(class = "plot-container", plotOutput(outputId = "pieChart"))
                 )
               )
             ),
-            conditionalPanel(
-              condition = "input.tabset1 == 'tab_qualitative'",
+            fluidRow(
               column(
-                width = 12,
+                width = 6,
                 box(
-                  title = "Diagramme en barres", status = "success", solidHeader = TRUE,
+                  width = NULL,
+                  title = "Graphique en mosaïque", status = "success", solidHeader = TRUE,
                   collapsible = TRUE,
-                  plotOutput(outputId = "barPlot")
-                ),
-                box(
-                  title = "Diagramme circulaire", status = "success", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "pieChart")
+                  div(class = "plot-container", plotOutput(outputId = "mosaicPlot"))
                 )
               ),
               column(
-                width = 12,
+                width = 6,
                 box(
-                  title = "Graphique en mosaïque", status = "warning", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "mosaicPlot")
-                ),
-                box(
+                  width = NULL,
                   title = "Diagramme en barres empilées", status = "warning", solidHeader = TRUE,
                   collapsible = TRUE,
-                  plotOutput(outputId = "stackedBarPlot")
-                )
-              ),
-              column(
-                width = 12,
-                box(
-                  width = 12,
-                  title = "Diagramme de Pareto", status = "danger", solidHeader = TRUE,
-                  collapsible = TRUE,
-                  plotOutput(outputId = "paretoChart")
+                  div(class = "plot-container", plotOutput(outputId = "stackedBarPlot"))
                 )
               )
             ),
-            uiOutput("myConditionalPanel")
-          )
+            fluidRow(
+              column(
+                width = 12,
+                box(
+                  width = NULL,
+                  title = "Diagramme de Pareto", status = "danger", solidHeader = TRUE,
+                  collapsible = TRUE,
+                  div(class = "plot-container", plotOutput(outputId = "paretoChart"))
+                )
+              )
+            )
+          ),
+          conditionalPanel(
+            condition = "input.tabset1 == 'tab_churn'",
+            fluidRow(
+              column(
+                width = 12,
+                box(
+                  title = "Proportion des individus qui ont churné", status = "primary", solidHeader = TRUE,
+                  collapsible = TRUE, width = NULL,
+                  div(class = "plot-container", plotOutput(outputId = "churnProportion"))
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                box(
+                  title = "Histogramme pour Churn vs. Non Churn", status = "info", solidHeader = TRUE,
+                  collapsible = TRUE, width = NULL,
+                  div(class = "plot-container", plotOutput(outputId = "churnHistogram"))
+                )
+              ),
+              column(
+                width = 6,
+                box(
+                  title = "Proportion de Churn vs. Non Churn (Qualitative)", status = "success", solidHeader = TRUE,
+                  collapsible = TRUE, width = NULL,
+                  div(class = "plot-container", plotOutput(outputId = "churnProportionQual"))
+                )
+              )
+            )
+          ),
+          uiOutput("myConditionalPanel")
         )
       ),
       tabItem(tabName = "Bv",
@@ -888,10 +860,7 @@ shinyApp(
                                
                                
                       )
-                      
-                      
-                      
-                      
+
                     )
                   )
                   
@@ -1037,104 +1006,124 @@ shinyApp(
               )
       ),
       tabItem(tabName = "ml",
-              fluidPage(
-                sliderInput("trainsplit", "Portion training:",
-                            min = 0.05, max = 0.95,
-                            value = 0.7, step = 0.05
-                ),
-                h3("Choisir les parametres d'entrainement"),
-                radioButtons("radio",
-                             label="Selectionnez",
-                             choices = list("Over Sampling " = 1, "Under Sampling " = 2,"Sans Sampling" = 3),
-                             selected = 1,
-                             inline = T,
-                             width = "100%"),
-                tabPanel("Classification",
-                         tabsetPanel(
-                           tabPanel("Random Forest", h1("Random Forest"),fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_RF"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_RF"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_RF"))),plotOutput("Classification_rf")),
-                           tabPanel("Logistic Regression", h1("Logistic Regression"), fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_LR"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_LR"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_LR"))),plotOutput("classification_lr")),
-                           tabPanel("Decision Tree", h1("Decision Tree"),fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_DT"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_DT"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_DT"))),fluidRow(column(4, h4("Arbre de décision :")), column(12, plotOutput("DT_tree"))), h4("Courbe PR:"),plotOutput("Classification_DT")),
-                           tabPanel("SVM", h1("SVM"), fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_SVM"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_SVM"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_SVM"))),plotOutput("classification_svm")),
-                           tabPanel("KNN", h1("KNN"), fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_KNN"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_KNN"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_KNN"))),plotOutput("classification_knn")),
-                           tabPanel("LDA", h1("LDA"), fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_LDA"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_LDA"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_LDA"))),plotOutput("classification_lda")),
-                           tabPanel("Naive Bayes", h1("NB"), fluidRow(column(2, h4("Precison: ")), column(2, textOutput("Acc_NB"))), fluidRow(column(2, h4("Recall: ")), column(2, textOutput("Rec_NB"))),fluidRow(column(2, h4("F1_score:")), column(2, textOutput("f_score_NB"))),plotOutput("classification_nb"))
-                           
-                           
-                         )
-                         
-                ))     
-              
+        fluidPage(
+          selectInput("target_column", "Select Target Column:", 
+            choices = NULL,  # We'll update this dynamically
+            selected = NULL),
+          uiOutput("feature_selection_ui"),  # Dynamic UI for feature selection
+          actionButton("select_all_features", "Select All Features"),
+          actionButton("deselect_all_features", "Deselect All Features"),
+          sliderInput("trainsplit", "Training portion:",
+                      min = 0.05, max = 0.95,
+                      value = 0.7, step = 0.05
+          ),
+          h3("Choose training parameters"),
+          radioButtons("radio",
+                      label = "Select",
+                      choices = list("Over Sampling" = 1, "Under Sampling" = 2, "No Sampling" = 3),
+                      selected = 3,
+                      inline = TRUE,
+                      width = "100%"),
+          
+          radioButtons("hyperparameter_tuning",
+                      label = "Hyperparameter tuning",
+                      choices = list("Default parameters" = "default", "Grid search" = "grid"),
+                      selected = "default",
+                      inline = TRUE,
+                      width = "100%"),
+          
+          tabPanel("Classification",
+                  tabsetPanel(
+                    tabPanel("Logistic Regression", 
+                      h1("Logistic Regression"),
+                      conditionalPanel(
+                        condition = "input.hyperparameter_tuning == 'grid'",
+                        sliderInput("lr_alpha_range", "Alpha range:", min = 0, max = 1, value = c(0, 1), step = 0.1),
+                        sliderInput("lr_lambda_range", "Lambda range (log scale):", min = -10, max = 2, value = c(-6, 0), step = 0.5),
+                        numericInput("lr_num_lambda", "Number of lambda values:", value = 100, min = 10, max = 500)
+                      ),
+                      actionButton("train_lr", "Train Logistic Regression Model"),
+                      fluidRow(
+                        column(3, h4("Precision: "), textOutput("Acc_LR")),
+                        column(3, h4("Recall: "), textOutput("Rec_LR")),
+                        column(3, h4("F1_score:"), textOutput("f_score_LR")),
+                        # column(3, h4("Best Alpha:"), textOutput("best_alpha_LR"))
+                      ),
+                      plotOutput("classification_lr"),
+                      verbatimTextOutput("lr_summary")
+                    ),
+                    tabPanel("Decision Tree", 
+                      h1("Decision Tree"),
+                      conditionalPanel(
+                        condition = "input.hyperparameter_tuning == 'grid'",
+                        sliderInput("dt_cp", "Complexity Parameter range:", min = 0.001, max = 0.1, value = c(0.001, 0.1), step = 0.001),
+                        sliderInput("dt_minsplit", "Min Split range:", min = 5, max = 50, value = c(5, 50), step = 5)
+                      ),
+                      actionButton("train_dt", "Train Decision Tree Model"),
+                      fluidRow(
+                        column(4, h4("Precision: "), textOutput("Acc_DT")),
+                        column(4, h4("Recall: "), textOutput("Rec_DT")),
+                        column(4, h4("F1_score:"), textOutput("f_score_DT"))
+                      ),
+                      fluidRow(column(12, h4("Decision tree:"), plotOutput("DT_tree"))),
+                      h4("ROC Curve:"),
+                      plotOutput("Classification_DT")
+                    ),
+                    tabPanel("SVM", 
+                      fluidRow(
+                        column(4,
+                          selectInput("svm_kernel",
+                            label = "Choose SVM kernel",
+                            choices = list(
+                              "Linear" = "linear",
+                              "Polynomial" = "polynomial",
+                              "Radial Basis Function (RBF)" = "radial",
+                              "Sigmoid" = "sigmoid"
+                            ),
+                            selected = "linear"
+                          ),
+                          conditionalPanel(
+                            condition = "input.hyperparameter_tuning == 'grid'",
+                            sliderInput("cost_range", "Cost range (log scale):", min = -5, max = 5, value = c(-1, 3), step = 1),
+                            conditionalPanel(
+                              condition = "input.svm_kernel == 'polynomial'",
+                              sliderInput("degree_range", "Degree range:", min = 2, max = 5, value = c(2, 3), step = 1)
+                            ),
+                            conditionalPanel(
+                              condition = "input.svm_kernel == 'radial' || input.svm_kernel == 'sigmoid'",
+                              sliderInput("gamma_range", "Gamma range (log scale):", min = -5, max = 5, value = c(-3, 1), step = 1)
+                            )
+                          ),
+                          actionButton("train_svm", "Train SVM Model")
+                        ),
+                        column(8,
+                          fluidRow(
+                            column(4, h4("Precision: "), textOutput("Acc_SVM")),
+                            column(4, h4("Recall: "), textOutput("Rec_SVM")),
+                            column(4, h4("F1_score:"), textOutput("f_score_SVM"))
+                          ),
+                          plotOutput("classification_svm"),
+                          verbatimTextOutput("svm_summary")
+                        )
+                      )
+                    )
+                  )
+          ),
+        )
       ),
-      
-      tabItem(
-        tabName = "classification",
-        fluidRow(
-          box(background = "black", textOutput(("ModName")))),
-        fluidRow(
-          
-          selectInput(inputId = "choice_model", label ="Choose a Model", choices = list("Logistic Regression",
-                                                                                        "LDA", "Naive Bayes", "KNN", "Support Vector Machine", "Decision Tree"), selected = "Logistic
-                      Regression", multiple = FALSE),
-          
-          conditionalPanel(condition = "input.choice_model == 'Support Vector Machine'",
-                           selectInput(inputId = "choice_type", label ="Choose a Machine Type", choices = list("C-classification",
-                                                                                                               "nu-classification"), selected = "C-classification", multiple = FALSE),
-                           selectInput(inputId = "choice_kernel", label ="Choose a Kernel Type", choices = list("linear",
-                                                                                                                "polynomial", "radial", "sigmoid"), selected = "polynomial", multiple = FALSE)),
-          conditionalPanel(condition = "input.choice_model == 'Decision Tree'",
-                           sliderInput(inputId = "choice_threshold", label ="Choose Test Statistic Threshold", min = 0.90, max =
-                                         0.99, value = 0.95, step = 0.01),
-                           sliderInput(inputId = "choice_depth", label ="Choose Max Tree Depth", min = 1, max = 30, value = 6,
-                                       step = 1),
-                           sliderInput(inputId = "choice_split", label ="Choose Min Threshold for Splitting", min = 10, max = 200,
-                                       value = 20, step = 1)),
-          
-          
-          conditionalPanel(condition = "input.choice_model == 'Logistic Regression'",
-                           box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-                               verbatimTextOutput("ModSummaryLR"), width = 8),
-                           box(title = "Feature Selection Parameters", solidHeader = TRUE, background = "olive", status =
-                                 "primary", checkboxGroupInput(inputId = "choice_indvar", label ="Choose Independant Variables", 
-                                                               choices = list( "Distance From Home" = "DistanceFromHome",  "Monthly Income" = "MonthlyIncome", "Number of Companies Worked" =
-                                                                                 "NumCompaniesWorked",  "Training Times Last Year" = "TrainingTimesLastYear", "Years Since Last Promotion" = "YearsSinceLastPromotion", "Years With Current
-                                                                               Manager" = "YearsWithCurrManager", 
-                                                                               "Department.Sales" = " Department.Sales",
-                                                                               "Education.College" = "Education.College", "Education.Bachelor" = "Education.Bachelor",
-                                                                               "Education.Master" = "Education.Master", "Education.Doctor" = "Education.Doctor",
-                                                                               "EducationField.Marketing" =
-                                                                                 "EducationField.Marketing",
-                                                                               "EducationField.Other" = "EducationField.Other", "Gender.Male" = "Gender.Male", "MaritalStatus.Married" =
-                                                                                 "MaritalStatus.Married", "MaritalStatus.Single" = "MaritalStatus.Single"), selected = list( "Distance From Home" = "DistanceFromHome",
-                                                                                                                                                                             "Monthly Income" = "MonthlyIncome", "Number of Companies
-                                                                                                                                                                             Worked" = "NumCompaniesWorked", "Percent Salary Hike" = "PercentSalaryHike",  "Total Working
-                                                                                                                                                                             Years" = "TotalWorkingYears", "Training Times Last Year" = "TrainingTimesLastYear",  "Years At Company" = "YearsAtCompany", "Years In Current Role" =
-                                                                                                                                                                               "YearsInCurrentRole", "Years Since Last Promotion" = "YearsSinceLastPromotion", "Years With Current
-                                                                                                                                                                             Manager" = "YearsWithCurrManager",
-                                                                                                                                                                             "Department.Sales" = " Department.Sales",
-                                                                                                                                                                             "Education.College" = "Education.College", "Education.Bachelor" = "Education.Bachelor",
-                                                                                                                                                                             "Education.Master" = "Education.Master", "Education.Doctor" = "Education.Doctor",
-                                                                                                                                                                             "EducationField.Marketing" =
-                                                                                                                                                                               "EducationField.Marketing", "EducationField.Medical" = "EducationField.Medical",
-                                                                                                                                                                             "EducationField.Other" = "EducationField.Other", "Gender.Male" = "Gender.Male", "MaritalStatus.Married" =
-                                                                                                                                                                               "MaritalStatus.Married", "MaritalStatus.Single" = "MaritalStatus.Single")), width = 4)),
-          conditionalPanel(condition = "input.choice_model == 'LDA'",
-                           box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-                               verbatimTextOutput("ModSummaryLDA"), width = 12)),
-          conditionalPanel(condition = "input.choice_model == 'Naive Bayes'",
-                           box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-                               verbatimTextOutput("ModSummaryNB"), width = 12)),
-          conditionalPanel(condition = "input.choice_model == 'KNN'",
-                           box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-                               verbatimTextOutput("ModSummaryKNN"), width = 12)),
-          conditionalPanel(condition = "input.choice_model == 'Support Vector Machine'",
-                           box(title = "Summary Output", solidHeader = TRUE, background = "aqua", status = "primary",
-                               verbatimTextOutput("ModSummarySVM"), width = 12)),
-          conditionalPanel(condition = "input.choice_model == 'Decision Tree'",
-                           box(title = "Decision Tree Chart", solidHeader = TRUE, background = "aqua", status = "primary",
-                               plotOutput("DTREE"), width = 12))
-          ))
-      
-      
+      tabItem(tabName = "report1",
+              h2("Credit fraud"),
+              includeHTML("creditcard.html")
+      ),
+      tabItem(tabName = "report2",
+              h2("Bank marketing"),
+              includeHTML("Bank_marketing.html")
+      ),
+      tabItem(tabName = "report3",
+              h2("Employee attrition"),
+              includeHTML("employee_attrition.html")
+      )
+
       
               )
                                   )
@@ -1349,11 +1338,7 @@ shinyApp(
                        legend = c(paste("avec imputation par la moyenne de la variable ",strCol,""), "avec valeurs manquantes"),  # Legend texts
                        lty = c(1, 2),           # Line types
                        col = c(2, 3),           # Line colors
-                       lwd = 2) 
-                
-                
-      
-                
+                       lwd = 2)                 
               } )
 
             }
@@ -1849,56 +1834,19 @@ shinyApp(
       if(length(quantitative()) >0 && input$Out=="Oui"){
         df=df_outliers()
         df2=data()
-        #print("I am here")
-        #data(df2)
-        
-        # #print(input$tab_outliers_rows_selected)
-        # print("-----------------------")
-        # print(df[input$tab_outliers_rows_selected, ])
-        
-        #  
-        # # print("--------------")
-        # # c=as.numeric(rownames(df))
-        # # for( a in c){
-        # #   print(a)
-        # # }
+
         # index de la ligne a supprimer
         c=as.numeric(rownames(df[input$tab_outliers_rows_selected, ]))
         # #print(input$tab_outliers_rows_selected)
         if (!is.null(input$tab_outliers_rows_selected)) {
           if(length(c)>0){
             df <- df[-input$tab_outliers_rows_selected, ]
-            
-            
-            
-            #print("I am here")
-            #print(c)
+          
             for(a in c){
-              #print("-----start-----")
-              #print(a)
-              #print('----then---')
-              #print(data()[a,])
-              #print('----data---')
-              #print(data())
-              #print(c)
-              #tab=data()[-as.numeric(c), ]
-              #print('------- after remove---------')
               
               tab=data()[-as.numeric(c), ]
               rownames(tab) <- NULL
-              #print(tab)
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              #data(df2)
-              
+ 
               
             }
             data(tab)
@@ -1912,14 +1860,6 @@ shinyApp(
             
           }
           
-          # dataset_server(input,output,data())
-          # exploration_server(input,output,data())
-          # univaree_server(input,output, data())
-          # Bivaree_server(input,output, data())
-          # Qnt_Qlt_server(input,output, data())
-          # Qlt_Qlt_server(input,output, data())
-          #Modele_server(input, output, data())
-          #df_outliers(df[-as.numeric(input$tab_outliers_rows_selected),])
         }
         
         
@@ -1927,146 +1867,7 @@ shinyApp(
       }
       
       
-      
-      # if(length(quantitative()) >0 && input$Out=="Oui"){
-      #   df=data()
-      #   l=list()
-      #   var.names <-c(input$OutList)
-      #   #     # Initialisation de la table
-      #   #     caract.df <- data.frame()
-      #   
-      #   # Pour chaque colonne, calcul de min, max, mean et ecart-type
-      #   for(strCol in var.names){
-      #     
-      #     
-      #     
-      #     
-      #     # get IQR
-      #     iqr=IQR(df[,strCol],na.rm = TRUE)
-      #     first_q=quantile((df[,strCol]),.25)
-      #     third_q=quantile((df[,strCol]),.75)
-      #     # get threshold values for outliers
-      #     Tmin = first_q-(1.5*iqr) 
-      #     Tmax = third_q+(1.5*iqr) 
-      #     
-      #     # print("Tmax")
-      #     # print(Tmax)
-      #     # print("Tmin")
-      #     # print(Tmin)
-      #     # print(max(df[,strCol]))
-      #     # print(var(df[,strCol]))
-      #     value = df[,strCol][df[,strCol] %in% boxplot.stats(df[,strCol])$out]
-      #     #nb_out=length(df[,strCol][which(df[,strCol]) < Tmin | (df[,strCol] > Tmax)])
-      #     if(length(value)>0){
-      #       
-      #       #output$outlier=renderText(print(var(df[,strCol])))
-      #       #print((var(df[,strCol]))[which(var(df[,strCol]) < Tmin | var(df[,strCol]) > Tmax)])
-      #       #print("------")
-      #       #print(df[,strCol])
-      #       #df[,strCol]=na.approx(df[,strCol])
-      #       
-      #       #df[,strCol][df[,strCol] %in% value] = median(df[,strCol])
-      #       df[,strCol][df[,strCol] %in% value] = NA
-      #       df = drop_na(df)
-      #       #df[,strCol][which(var(df[,strCol]) < Tmin | var(df[,strCol]) > Tmax)]=na.approx(df[,strCol])
-      #       #df2=subset(df,df$strCol >Tmax &  df$strCol < Tmin)
-      #        data(df)
-      #        dataset_server(input,output,data())
-      #        exploration_server(input,output,data())
-      #        univaree_server(input,output, data())
-      #        Bivaree_server(input,output, data())
-      #        Qnt_Qlt_server(input,output, data())
-      #        Qlt_Qlt_server(input,output, data())
-      #        Modele_server(input, output, data())
-      #       #print(var(df[,strCol]))
-      #       
-      #       
-      #     }
-      #     else{
-      #       print("I am here")
-      #     }
-      #        
-      #     
-      #     
-      #   }
-      #   
-      #   
-      # }
-      
     })
-    # output$resultat_Oui<-renderText({
-    #   df=data()
-    #   var.names <-c(input$OutList)
-    #   #caract.df <- data.frame()
-    #   #strCol=var.names
-    #   #print(strCol)
-    #   
-    #     
-    #     # get IQR
-    #     iqr=IQR(df[,input$OutList],na.rm = TRUE)
-    #     
-    #     first_q=quantile((df[,input$OutList]),nar.rm=TRUE)[2]
-    #    
-    #     third_q=quantile((df[,input$OutList]),nar.rm=TRUE)[4]
-    #     
-    #     
-    #      # get threshold values for outliers
-    #       Tmin = first_q-(1.5*iqr) 
-    #       Tmax = third_q+(1.5*iqr) 
-    #       print(third_q)
-    #     #  nb_out=length(var(df[,strCol])[which(var(df[,strCol]) < Tmin | var(df[,strCol]) > Tmax)])
-    #     #  if(nb_out>0){
-    #     #    df2<-subset(df,var(df[,strCol]))
-    #     #    output$outlier=renderText(print(var(df[,strCol])))
-    #     #    print(df2)
-    #     #     
-    #     #   }
-    #   
-    #   #print(var.names)
-    # })
-    # observeEvent(input$Out,{
-    #   if (input$Out=="Oui"){
-    #        
-    #         print("je suis la, rania")
-    #         # df=data()
-    #         # l=list()
-    #         # var.names <-c(input$OutList)
-    #         # # Initialisation de la table
-    #         # caract.df <- data.frame()
-    #         # print(var.names)
-    #         
-    #         # Pour chaque colonne, calcul de min, max, mean et ecart-type
-    #         # for(strCol in var.names){
-    #         #   
-    #         #   
-    #         #   
-    #         #   
-    #         #   # get IQR
-    #         #   iqr=IQR(df[,strCol],na.rm = TRUE)
-    #         #   first_q=quantile((df[,strCol]))[2]
-    #         #   third_q=quantile((df[,strCol]))[4]
-    #         #   # get threshold values for outliers
-    #         #   Tmin = first_q-(1.5*iqr) 
-    #         #   Tmax = third_q+(1.5*iqr) 
-    #         #   
-    #         #   
-    #         #   nb_out=length(var(df[,strCol])[which(var(df[,strCol]) < Tmin | var(df[,strCol]) > Tmax)])
-    #         #   if(nb_out>0){
-    #         #     #df2<-subset(df,var(df[,strCol]))
-    #         #     #output$outlier=renderText(print(var(df[,strCol])))
-    #         #     #print(df2)
-    #         #     
-    #         #   }
-    #         #   
-    #         #   
-    #         # }
-    #         
-    #       
-    #     
-    #   }
-    # })
-    
-    
     
     # Normalisation des variables quantitative
     
@@ -2539,11 +2340,6 @@ shinyApp(
     })
     
     
-    
-    
-    
-    
-    
     ## renommer la colonne ###
     output$renameList<- renderUI({
       selectInput('renameList', 'Le choix de la variable ',colnames(data()))
@@ -2640,782 +2436,551 @@ shinyApp(
     })
     
     
-    #RÃ©cupÃ©ration du Dataset selectionnÃ©
-    datasetInput <- reactive({
-      read_csv("Employe.csv")
+########### models part ####################################
+    
+    # This is to select the target column
+
+    observe({
+      req(data())
+      updateSelectInput(session, "target_column",
+                        choices = names(data()),
+                        selected = names(data())[1])
+    })
+
+    # This is to create the dynamic UI for feature selection
+    output$feature_selection_ui <- renderUI({
+      req(data())
+      req(input$target_column)
+      all_columns <- names(data())
+      feature_columns <- all_columns[all_columns != input$target_column]
+      
+      selectInput("feature_columns", "Select Feature Columns:",
+                  choices = feature_columns,
+                  multiple = TRUE,
+                  selected = feature_columns)
+    })
+
+    # Handle "Select All Features" button
+    observeEvent(input$select_all_features, {
+      req(data())
+      all_columns <- names(data())
+      feature_columns <- all_columns[all_columns != input$target_column]
+      updateSelectInput(session, "feature_columns",
+                        selected = feature_columns)
+    })
+
+    # Handle "Deselect All Features" button
+    observeEvent(input$deselect_all_features, {
+      updateSelectInput(session, "feature_columns",
+                        selected = character(0))
+    })
+
+    # Update feature selection when target column changes
+    observe({
+      req(input$target_column)
+      all_columns <- names(data())
+      feature_columns <- all_columns[all_columns != input$target_column]
+      updateSelectInput(session, "feature_columns",
+                        choices = feature_columns,
+                        selected = intersect(input$feature_columns, feature_columns))
     })
     
     
-    
-    col <- reactive({
-      input$variables
+    # Linear Regression
+  
+
+    # Train Logistic Regression model
+    lr_params <- reactiveVal(list())
+
+    observe({
+      lr_params(list(
+        hyperparameter_tuning = input$hyperparameter_tuning,
+        alpha_range = if(input$hyperparameter_tuning == "grid") input$lr_alpha_range else c(1, 1),
+        lambda_range = if(input$hyperparameter_tuning == "grid") input$lr_lambda_range else c(-6, 0),
+        num_lambda = if(input$hyperparameter_tuning == "grid") input$lr_num_lambda else 100
+      ))
     })
-    
-    #Affichage du dataset spiral
-    output$view_spr = output$view <- DT::renderDataTable({
-      datasetInput()
-    })
-    
-    pretraitement <- reactive({
-      empattr = datasetInput()
+
+    lr_model <- reactive({
+      req(input$train_lr)
+      req(lr_params())
+      req(input$feature_columns)  # Ensure feature columns are selected
       
-      empattr$Education = factor(empattr$Education)
-      empattr$Education = revalue(empattr$Education, c("1"="Below College", "2"="College", "3"="Bachelor", "4"="Master", "5"="Doctor"))
+      # Get the data, target column, and selected features
+      df <- data()
+      target_col <- input$target_column
+      feature_cols <- input$feature_columns
       
-      empattr$EnvironmentSatisfaction = factor(empattr$EnvironmentSatisfaction)
-      empattr$EnvironmentSatisfaction = revalue(empattr$EnvironmentSatisfaction, c("1"="Low", "2"="Medium", "3"="High", "4"="Very High"))
+      # Ensure the target column is a factor
+      df[[target_col]] <- as.factor(df[[target_col]])
       
-      empattr$JobInvolvement = factor(empattr$JobInvolvement)
-      empattr$JobInvolvement = revalue(empattr$JobInvolvement, c("1"="Low", "2"="Medium", "3"="High", "4"="Very High"))
+      set.seed(2001)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      train_data <- df[train_index, c(target_col, feature_cols)]
+      test_data <- df[-train_index, c(target_col, feature_cols)]
       
-      empattr$JobSatisfaction = factor(empattr$JobSatisfaction)
-      empattr$JobSatisfaction = revalue(empattr$JobSatisfaction, c("1"="Low", "2"="Medium", "3"="High", "4"="Very High"))
-      
-      empattr$PerformanceRating = factor(empattr$PerformanceRating)
-      
-      empattr$JobLevel = factor(empattr$EnvironmentSatisfaction)
-      
-      empattr$WorkLifeBalance = factor(empattr$WorkLifeBalance)
-      empattr$WorkLifeBalance = revalue(empattr$WorkLifeBalance, c("1"="Bad", "2"="Good", "3"="Better", "4"="Best"))
-      
-      empattr$Attrition = factor(empattr$Attrition)
-      empattr$Attrition = revalue(empattr$Attrition, c("No"="No Leave", "Yes"="Leave"))
-      
-      empattr$BusinessTravel = factor(empattr$BusinessTravel)
-      
-      empattr$Department = factor(empattr$Department)
-      
-      empattr$EducationField = factor(empattr$EducationField)
-      
-      empattr$Gender = factor(empattr$Gender)
-      
-      empattr$JobRole = factor(empattr$JobRole)
-      
-      empattr$JobLevel = factor(empattr$JobLevel)
-      
-      empattr$MaritalStatus = factor(empattr$MaritalStatus)
-      
-      empattr$Over18 = factor(empattr$Over18)
-      
-      empattr = empattr[,which(!(names(empattr) %in% c("EmployeeID", "EmployeeCount", "StandardHours", "Over18")))]
-      empattr = na.omit(empattr)
-      
-      empattr
-    })
-    
-    
-    one_hot <- reactive({
-      dataset<-pretraitement()
-      
-      dataset$EmployeeID=NULL
-      dmy <- dummyVars(~., data = dataset[-7])
-      data_one_cod <- data.frame(predict(dmy, newdata = dataset))
-      data_one_cod$Attrition=dataset$Attrition
-      
-      data_one_cod
-      
-      
-    })
-   
-    
-    
-    #The following lines of code generate a texbox for model name
-    output$ModName = renderText({
-      paste("Features selection for ", input$choice_model, "Algorithm")
-    })
-    
-    indexes = reactive({
-      set.seed(1234)
-      sample(n,n*(input$choice_validate/100))
-    })
-    
-    trainset = reactive({HR_trandata [indexes(),]})
-    
-    testset = reactive({HR_trandata [-indexes(),]})
-    
-    balanced_trainset = reactive({
-      
-      dat<-one_hot()
-      res<-SMOTE(Attrition~., data = dat, perc.over=100)
-      res
-      #one_hot()
-      
-      
-    })
-    svm_type = reactive({
-      if(input$choice_type == "nu-classification"){
-        paste("nu-classification")
-      } else {
-        paste("C-classification")
+      # Handle class imbalance
+      if (input$radio == 1) {  # Over Sampling
+        train_data <- upSample(x = train_data[, feature_cols],
+                              y = train_data[[target_col]],
+                              yname = target_col)
+      } else if (input$radio == 2) {  # Under Sampling
+        train_data <- downSample(x = train_data[, feature_cols],
+                                y = train_data[[target_col]],
+                                yname = target_col)
       }
-    })
-    
-    svm_kernel = reactive({
-      if(input$choice_kernel == "linear"){
-        paste("linear")
-      } else if(input$choice_kernel == "radial"){
-        paste("radial")
-      } else if(input$choice_kernel == "sigmoid"){
-        paste("sigmoid")
-      } else {
-        paste("polynomial")
-      }
-    })
-    
-    trainmodel = reactive({
-      if(input$choice_model == "Naive Bayes"){
-        naiveBayes(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), data =
-                     one_hot())
-      } else if(input$choice_model == "Support Vector Machine"){
-        svm(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), data =
-              one_hot(), type= svm_type(), kernel= svm_kernel())
-      } else if(input$choice_model == "Decision Tree"){
-        ctree(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), data =
-                one_hot(), control = ctree_control(mincriterion = input$choice_threshold, maxdepth =
-                                                               input$choice_depth, minsplit = input$choice_split))
-      } else if(input$choice_model == "LDA"){
-        train(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), method = "lda",
-              data = one_hot())
-      } else if(input$choice_model == "KNN"){
-        train(as.formula(paste("Attrition~ ", paste0(input$choice_indvar, collapse = "+"))), method = "knn",
-              data = one_hot())
-      } else {
-        glm(as.formula(paste("Attrition~ ",paste0(input$choice_indvar, collapse = "+"))), data =
-              one_hot(), family = "binomial")
-      }
-    })
-    
-    #The following lines of code generate the summary output for the model(s)
-    output$ModSummaryLR = renderPrint({
-      summary(trainmodel())
-    })
-    output$ModSummaryLDA = renderPrint({
-      trainmodel()$finalModel
-    })
-    
-    output$ModSummaryNB = renderPrint({
-      trainmodel()
-    })
-    
-    output$ModSummaryKNN = renderPrint({
-      trainmodel()
-    })
-    
-    output$ModSummarySVM = renderPrint({
-      trainmodel()
-    })
-    #The following lines of code generate the decision tree plot
-    output$DTREE = renderPlot({
-      if(input$choice_model == "Decision Tree"){
-        plot(trainmodel(), type = "simple")}
-    })
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    train_Lr <- reactive({
-      set.seed(3000)
-      dataset =balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
       
+      # Prepare the data matrix
+      x <- as.matrix(train_data[, feature_cols])
+      y <- train_data[[target_col]]
       
+      params <- lr_params()
       
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
-      }
-      if (input$radio == 1){
+      if (params$hyperparameter_tuning == "grid") {
+        # Perform grid search
+        alpha_range <- seq(params$alpha_range[1], params$alpha_range[2], length.out = 5)
+        lambda_range <- 10^seq(params$lambda_range[1], params$lambda_range[2], length.out = params$num_lambda)
         
-        upSample(train, train$Attrition)
+        best_model <- NULL
+        best_cvm <- Inf
+        best_alpha <- NULL
         
+        for (alpha in alpha_range) {
+          model <- glmnet::cv.glmnet(x = x,
+                                    y = y,
+                                    alpha = alpha,
+                                    lambda = lambda_range,
+                                    family = "binomial",
+                                    type.measure = "class")
+          
+          if (min(model$cvm) < best_cvm) {
+            best_model <- model
+            best_cvm <- min(model$cvm)
+            best_alpha <- alpha
+          }
+        }
+        
+        model <- best_model
+        attr(model, "best_alpha") <- best_alpha
+        
+      } else {
+        # Use default parameters
+        model <- glmnet::cv.glmnet(x = x,
+                                  y = y,
+                                  alpha = 1,
+                                  family = "binomial",
+                                  type.measure = "class")
+        attr(model, "best_alpha") <- 1
       }
       
-      attLog=glm(Attrition~.,data=train,family = binomial())
-      
-      
+      return(model)
     })
-    
-    output$Acc_LR <- renderText({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      attLog=train_Lr()
-      predGlm=predict(attLog,type="response",newdata=test)
-      pred <- ifelse(predGlm < 0.5, 0, 1)
-      xtab = table(pred, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
+
+    # Reactive expression for model evaluation
+    lr_eval <- reactive({
+      req(lr_model())
+      req(input$feature_columns)  # Ensure feature columns are selected
+      model <- lr_model()
       
+      df <- data()
+      target_col <- input$target_column
+      feature_cols <- input$feature_columns
       
+      set.seed(2001)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      test_data <- df[-train_index, c(target_col, feature_cols)]
+      
+      # Make predictions on test data
+      predictions <- predict(model, newx = as.matrix(test_data[, feature_cols]),
+                            s = "lambda.min", type = "class")
+      prob_predictions <- predict(model, newx = as.matrix(test_data[, feature_cols]),
+                                  s = "lambda.min", type = "response")
+      
+      # Calculate metrics
+      cm <- confusionMatrix(as.factor(predictions), as.factor(test_data[[target_col]]))
+      precision <- cm$byClass["Precision"]
+      recall <- cm$byClass["Recall"]
+      f1_score <- cm$byClass["F1"]
+      
+      # ROC curve data
+      roc_obj <- roc(as.numeric(as.factor(test_data[[target_col]])) - 1, as.numeric(prob_predictions))
+      
+      list(
+        predictions = predictions, 
+        test_data = test_data, 
+        precision = precision, 
+        recall = recall, 
+        f1_score = f1_score,
+        roc_obj = roc_obj
+      )
     })
-    output$Rec_LR <- renderText({
-      set.seed(3000)
-      dataset =balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      attLog=train_Lr()
-      predGlm=predict(attLog,type="response",newdata=test)
-      xtab = table(predGlm, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
-      
-      
+
+
+
+      # Outputs
+    output$Acc_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.2f", lr_eval()$precision) 
     })
-    output$f_score_LR <- renderText({
-      set.seed(3000)
-      dataset =balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      attLog=train_Lr()
-      predGlm=predict(attLog,type="response",newdata=test)
-      pred <- ifelse(predGlm < 0.5, 1, 2)
-      
-      F1_Score(as.numeric(as.factor(test$Attrition)), pred)*100
+
+    output$Rec_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.2f", lr_eval()$recall) 
     })
+
+    output$f_score_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.2f", lr_eval()$f1_score) 
+    })
+
+    output$AUC_LR <- renderText({ 
+      req(lr_eval())
+      sprintf("%.3f", lr_eval()$roc_obj$auc) 
+    })
+
+    # output$best_alpha_LR <- renderText({ 
+    #   req(lr_model())
+    #   sprintf("%.3f", attr(lr_model(), "best_alpha"))
+    # })
+
     output$classification_lr <- renderPlot({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      attLog=train_Lr()
-      predGlm=predict(attLog,type="response",newdata=test)
-      
-      scores <- data.frame(predGlm,test$Attrition)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predGlm,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predGlm,
-                     curve=T)
-      
-      plot(pr)
+      req(lr_eval()$roc_obj)
+      plot(lr_eval()$roc_obj, main = paste("ROC Curve for Logistic Regression (AUC =", round(lr_eval()$roc_obj$auc, 3), ")"))
+      abline(a = 0, b = 1, lty = 2, col = "gray")
     })
-    
-    
-    
-    train_KNN <- reactive({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
+
+    output$lr_summary <- renderPrint({
+      req(lr_model())
+      summary(lr_model())
+    })
+
+    # SVM
+    svm_params <- reactiveVal(list())
+
+    observe({
+      params <- list(
+        kernel = input$svm_kernel,
+        hyperparameter_tuning = input$hyperparameter_tuning,
+        cost_range = input$cost_range
+      )
       
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
+      if (input$svm_kernel == "polynomial") {
+        params$degree_range <- input$degree_range
       }
-      if (input$radio == 1){
-        
-        upSample(train, train$Attrition)
-        
+      
+      if (input$svm_kernel %in% c("radial", "sigmoid")) {
+        params$gamma_range <- input$gamma_range
       }
-      knn_auto=train(Attrition~., method = "knn", data =train)
       
+      svm_params(params)
     })
-    
-    output$Acc_KNN <- renderText({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_knn=train_KNN()
-      predict_autoknn = predict(auto_knn,test)
-      xtab = table(predict_autoknn, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
+
+    svm_model <- reactive({
+      req(input$train_svm)
+      params <- svm_params()
+      req(params$kernel, params$hyperparameter_tuning)
       
+      # Get the data and target column
+      df <- data()
+      target_col <- input$target_column
       
-    })
-    output$Rec_KNN<- renderText({
-      set.seed(3000)
-      dataset =balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_knn=train_KNN()
-      predict_autoknn = predict(auto_knn,test)
-      xtab = table(predict_autoknn, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
+      # Apply feature selection
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
       
-    })
-    output$f_score_KNN <- renderText({
-      set.seed(3000)
-      dataset =balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_knn=train_KNN()
-      predict_autoknn = predict(auto_knn,test)
-      xtab = table(predict_autoknn, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      recall = xtab[1,1]/sum(xtab[1,])
-      (2 * (precision * recall) / (precision + recall))*100
+      # Ensure the target column is a factor
+      df[[target_col]] <- as.factor(df[[target_col]])
       
+      set.seed(2001)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      train_data <- df[train_index, ]
+      test_data <- df[-train_index, ]
       
-    })
-    output$classification_knn <- renderPlot({
-      dataset=balanced_trainset()
-      
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_knn=train_KNN()
-      predict_autoknn = predict(auto_knn,test)
-      scores <- data.frame(predict_autoknn,test$Attrition)
-      print(scores)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predict_autoknn,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predict_autoknn,
-                     curve=T)
-      
-      plot(pr)
-    })
-    
-    
-    
-    train_SVM <- reactive({
-      set.seed(3000)
-      dataset =one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
+      # Handle class imbalance
+      if (input$radio == 1) {  # Over Sampling
+        train_data <- upSample(x = train_data[, -which(names(train_data) == target_col)],
+                              y = train_data[[target_col]],
+                              yname = target_col)
+      } else if (input$radio == 2) {  # Under Sampling
+        train_data <- downSample(x = train_data[, -which(names(train_data) == target_col)],
+                                y = train_data[[target_col]],
+                                yname = target_col)
       }
-      if (input$radio == 1){
+      
+      # Create the formula using only selected features
+      formula <- as.formula(paste(target_col, "~", paste(selected_features, collapse = " + ")))
+      
+      params <- svm_params()
+      
+      if (params$hyperparameter_tuning == "grid") {
+        # Perform grid search
+        cost_range <- 10^seq(params$cost_range[1], params$cost_range[2], length.out = 5)
         
-        upSample(train, train$Attrition)
+        if (params$kernel == "polynomial") {
+          degree_range <- seq(params$degree_range[1], params$degree_range[2], by = 1)
+          param_grid <- expand.grid(cost = cost_range, degree = degree_range)
+        } else if (params$kernel %in% c("radial", "sigmoid")) {
+          gamma_range <- 10^seq(params$gamma_range[1], params$gamma_range[2], length.out = 5)
+          param_grid <- expand.grid(cost = cost_range, gamma = gamma_range)
+        } else {
+          param_grid <- data.frame(cost = cost_range)
+        }
         
+        # Function to train SVM and return accuracy
+        train_and_evaluate <- function(cost, degree = NULL, gamma = NULL) {
+          svm_params <- list(formula = formula, data = train_data, kernel = params$kernel, cost = cost)
+          if (!is.null(degree)) svm_params$degree <- degree
+          if (!is.null(gamma)) svm_params$gamma <- gamma
+          
+          model <- do.call(e1071::svm, svm_params)
+          predictions <- predict(model, newdata = train_data)
+          conf_matrix <- table(train_data[[target_col]], predictions)
+          accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+          return(accuracy)
+        }
+        
+        # Perform grid search
+        grid_results <- apply(param_grid, 1, function(params) {
+          do.call(train_and_evaluate, as.list(params))
+        })
+        
+        best_params <- param_grid[which.max(grid_results), ]
+        
+        # Train final model with best parameters
+        svm_params <- c(list(formula = formula, data = train_data, kernel = params$kernel), best_params)
+        model <- do.call(e1071::svm, svm_params)
+        
+      } else {
+        # Use default parameters
+        model <- e1071::svm(formula, data = train_data, kernel = params$kernel)
       }
-      svm_model=svm(Attrition~., data =train, type='C-classification',
-                    kernel='poly')
       
+      return(model)
     })
-    
-    output$Acc_SVM <- renderText({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_svm=train_SVM()
-      predict_autosvm = predict(auto_svm, test)
-      table(test$Attrition,predict_autosvm)
-      xtab = table(predict_autosvm, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
+
+    # Reactive expression for model evaluation
+    model_eval <- reactive({
+      req(svm_model())
+      model <- svm_model()
       
+      df <- data()
+      target_col <- input$target_column
+      
+      # Apply feature selection to test data
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
+      
+      set.seed(2001)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      test_data <- df[-train_index, ]
+      
+      # Make predictions on test data
+      predictions <- predict(model, newdata = test_data)
+      
+      # Calculate metrics
+      cm <- confusionMatrix(predictions, as.factor(test_data[[target_col]]))
+      precision <- cm$byClass["Precision"]
+      recall <- cm$byClass["Recall"]
+      f1_score <- cm$byClass["F1"]
+      
+      # ROC curve data
+      roc_obj <- roc(as.numeric(as.factor(test_data[[target_col]])) - 1, as.numeric(as.factor(predictions)) - 1)
+      
+      list(
+        predictions = predictions, 
+        test_data = test_data, 
+        precision = precision, 
+        recall = recall, 
+        f1_score = f1_score,
+        roc_obj = roc_obj
+      )
     })
-    output$f_score_SVM <- renderText({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_svm=train_SVM()
-      predict_autosvm = predict(auto_svm, test)
-      F1_Score(as.numeric(as.factor(test$Attrition)), as.numeric(predict_autosvm))*100
-      
-      
-      
+
+    # Outputs
+    output$Acc_SVM <- renderText({ 
+      req(model_eval())
+      sprintf("%.2f", model_eval()$precision) 
     })
-    output$Rec_SVM<- renderText({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_svm=train_SVM()
-      predict_autosvm = predict(auto_svm, test)
-      xtab = table(predict_autosvm, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
-      
-      
+
+    output$Rec_SVM <- renderText({ 
+      req(model_eval())
+      sprintf("%.2f", model_eval()$recall) 
     })
+
+    output$f_score_SVM <- renderText({ 
+      req(model_eval())
+      sprintf("%.2f", model_eval()$f1_score) 
+    })
+
     output$classification_svm <- renderPlot({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_svm=train_SVM()
-      predict_autosvm = predict(auto_svm, test)
-      scores <- data.frame(predict_autosvm,test$Attrition)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predict_autosvm,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predict_autosvm,
-                     curve=T)
-      
-      plot(pr)
+      req(model_eval()$roc_obj)
+      plot(model_eval()$roc_obj, main = paste("ROC Curve for SVM (AUC =", round(model_eval()$roc_obj$auc, 3), ")"))
+      abline(a = 0, b = 1, lty = 2, col = "gray")
     })
-    
-    
-    
-    
-    train_LDA <- reactive({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      dataset=dataset[,-c(19,20)]
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
+
+    output$svm_summary <- renderPrint({
+      req(svm_model())
+      summary(svm_model())
+    })
+
+
+
+
+
+    # Decision Tree
+    dt_params <- reactiveVal(list())
+
+    observe({
+      params <- list(
+        hyperparameter_tuning = input$hyperparameter_tuning,
+        cp = input$dt_cp,
+        minsplit = input$dt_minsplit
+      )
       
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
+      dt_params(params)
+    })
+
+    dt_model <- reactive({
+      req(input$train_dt)
+      params <- dt_params()
+      req(params$hyperparameter_tuning)
+      
+      # Get the data and target column
+      df <- data()
+      target_col <- input$target_column
+      
+      # Apply feature selection
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
+      
+      # Ensure the target column is a factor
+      df[[target_col]] <- as.factor(df[[target_col]])
+      
+      set.seed(123)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      train_data <- df[train_index, ]
+      test_data <- df[-train_index, ]
+      
+      # Handle class imbalance
+      if (input$radio == 1) {  # Over Sampling
+        train_data <- upSample(x = train_data[, -which(names(train_data) == target_col)],
+                              y = train_data[[target_col]],
+                              yname = target_col)
+      } else if (input$radio == 2) {  # Under Sampling
+        train_data <- downSample(x = train_data[, -which(names(train_data) == target_col)],
+                                y = train_data[[target_col]],
+                                yname = target_col)
       }
-      if (input$radio == 1){
+      
+      # Create the formula using only selected features
+      formula <- as.formula(paste(target_col, "~", paste(selected_features, collapse = " + ")))
+      
+      if (params$hyperparameter_tuning == "grid") {
+        # Perform grid search
+        cp_range <- seq(params$cp[1], params$cp[2], length.out = 10)
+        minsplit_range <- seq(params$minsplit[1], params$minsplit[2], by = 5)
         
-        upSample(train, train$Attrition)
+        param_grid <- expand.grid(cp = cp_range, minsplit = minsplit_range)
         
+        # Function to train Decision Tree and return accuracy
+        train_and_evaluate <- function(cp, minsplit) {
+          model <- rpart(formula, data = train_data, method = "class",
+                        control = rpart.control(cp = cp, minsplit = minsplit))
+          predictions <- predict(model, newdata = train_data, type = "class")
+          conf_matrix <- table(train_data[[target_col]], predictions)
+          accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+          return(accuracy)
+        }
+        
+        # Perform grid search
+        grid_results <- apply(param_grid, 1, function(params) {
+          do.call(train_and_evaluate, as.list(params))
+        })
+        
+        best_params <- param_grid[which.max(grid_results), ]
+        
+        # Train final model with best parameters
+        model <- rpart(formula, data = train_data, method = "class",
+                      control = rpart.control(cp = best_params$cp, minsplit = best_params$minsplit))
+        
+      } else {
+        # Use default parameters
+        model <- rpart(formula, data = train_data, method = "class")
       }
-      auto_lda = train(Attrition~., method = "lda", data =train)
       
+      return(model)
     })
-    
-    output$Acc_LDA <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_lda=train_LDA()
-      predict_autolda =predict(auto_lda, test)
-      predicted_autolda = as.factor(predict_autolda)
-      xtab = table(predict_autolda, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
+
+    # Reactive expression for model evaluation
+    dt_eval <- reactive({
+      req(dt_model())
+      model <- dt_model()
       
+      df <- data()
+      target_col <- input$target_column
+      
+      # Apply feature selection to test data
+      selected_features <- input$feature_columns
+      df <- df[, c(target_col, selected_features)]
+      
+      set.seed(123)
+      train_index <- createDataPartition(df[[target_col]], p = input$trainsplit, list = FALSE)
+      test_data <- df[-train_index, ]
+      
+      # Make predictions on test data
+      predictions <- predict(model, newdata = test_data, type = "class")
+      
+      # Calculate metrics
+      cm <- confusionMatrix(predictions, as.factor(test_data[[target_col]]))
+      precision <- cm$byClass["Precision"]
+      recall <- cm$byClass["Recall"]
+      f1_score <- cm$byClass["F1"]
+      
+      # ROC curve data
+      roc_obj <- roc(as.numeric(as.factor(test_data[[target_col]])) - 1, 
+                    as.numeric(predict(model, newdata = test_data, type = "prob")[,2]))
+      
+      list(
+        predictions = predictions, 
+        test_data = test_data, 
+        precision = precision, 
+        recall = recall, 
+        f1_score = f1_score,
+        roc_obj = roc_obj,
+        model = model
+      )
     })
-    output$f_score_LDA <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_lda=train_LDA()
-      predict_autolda = predict(auto_lda, test)
-      F1_Score(as.numeric(as.factor(test$Attrition)), as.numeric(predict_autolda))*100
-      
-      
-      
+    # Outputs
+    output$Acc_DT <- renderText({ 
+      req(dt_eval())
+      sprintf("%.2f", dt_eval()$precision) 
     })
-    output$Rec_LDA <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_lda=train_LDA()
-      predict_autolda = predict(auto_lda, test)
-      xtab = table(predict_autolda, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
-      
-      
-      
-      
+
+    output$Rec_DT <- renderText({ 
+      req(dt_eval())
+      sprintf("%.2f", dt_eval()$recall) 
     })
-    output$classification_lda <- renderPlot({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_lda=train_LDA()
-      predict_autolda= predict(auto_lda, test)
-      scores <- data.frame(predict_autolda,test$Attrition)
-      print(scores)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predict_autolda,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predict_autolda,
-                     curve=T)
-      
-      plot(pr)
+
+    output$f_score_DT <- renderText({ 
+      req(dt_eval())
+      sprintf("%.2f", dt_eval()$f1_score) 
     })
-    
-    
-    
-    train_NB <- reactive({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
-      }
-      if (input$radio == 1){
-        
-        upSample(train, train$Attrition)
-        
-      }
-      auto_bayes= naiveBayes(Attrition~., data =train)
-      
-    })
-    
-    output$Acc_NB <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_nb=train_NB()
-      predict_autonb =predict(auto_nb, test)
-      predicted_autonb = as.factor(predict_autonb)
-      xtab = table(predict_autonb, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
-      
-    })
-    output$f_score_NB <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_nb=train_NB()
-      predict_autonb = predict(auto_nb, test)
-      F1_Score(as.numeric(as.factor(test$Attrition)), as.numeric(predict_autonb))*100
-      
-      
-      
-    })
-    output$Rec_NB <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_nb=train_NB()
-      predict_autonb = predict(auto_nb, test)
-      xtab = table(predict_autonb, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
-      
-      
-    })
-    output$classification_nb <- renderPlot({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      auto_nb=train_NB()
-      predict_autonb= predict(auto_nb, test,type='class')
-      predicted_autonb = as.factor(predict_autonb)
-      scores <- data.frame(predict_autonb,test$Attrition)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predict_autonb,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predict_autonb,
-                     curve=T)
-      
-      plot(pr)
-    })
-    
-    
-    train_rf<- reactive({
-      set.seed(3000)
-      dataset =one_hot()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
-      }
-      if (input$radio == 1){
-        
-        upSample(train,train$Attrition)
-        
-      }
-      randomForestModel=randomForest(as.factor(Attrition)~.,data=train,ntree=100,nodesize=12)
-      
-    })  
-    output$Acc_RF <- renderText({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      randomForestModel=train_rf()
-      predictRF=predict(randomForestModel,newdata=test)
-      xtab = table(predictRF, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
-      
-    })
-    output$Rec_RF <- renderText({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      randomForestModel=train_rf()
-      predictRF=predict(randomForestModel,newdata=test)
-      xtab = table(predictRF, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
-      
-      
-    })
-    output$f_score_RF <- renderText({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      randomForestModel=train_rf()
-      predictRF=predict(randomForestModel,newdata=test)
-      F1_Score(as.numeric(as.factor(test$Attrition)), as.numeric(predictRF))*100
-    })
-    output$Classification_rf <- renderPlot({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      #randomForestModel=train_rf()  
-      randomForestModel=train_rf()
-      predictRF=predict(randomForestModel,newdata=test,type="response")
-      
-      scores <- data.frame(predictRF,test$Attrition)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predictRF,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predictRF,
-                     curve=T)
-      
-      
-      plot(pr)
-      
-      
-    })
-    
-    train_DT<- reactive({
-      set.seed(3000)
-      dataset = balanced_trainset()
-      dataset=na.omit(dataset)
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      if (input$radio == 2){
-        downSample(train, train$Attrition)
-      }
-      if (input$radio == 1){
-        
-        upSample(train,train$Attrition)
-        
-      }
-      decisionTreeModel= rpart(Attrition~.,data=train,method="class")
-    })  
-    output$Acc_DT <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      decisionTreeModel=train_DT()
-      predDT=predict(decisionTreeModel,newdata = test,type = "class")
-      xtab = table(predDT, test$Attrition)
-      precision = xtab[1,1]/sum(xtab[,1])
-      precision*100
-      
-    })
-    output$Rec_DT <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      decisionTreeModel=train_DT()
-      predDT=predict(decisionTreeModel,newdata = test,type = "class")
-      xtab = table(predDT, test$Attrition)
-      (xtab[1,1]/sum(xtab[1,]))*100
-      
-      
-    })
-    output$f_score_DT <- renderText({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      decisionTreeModel=train_DT()
-      predDT=predict(decisionTreeModel,newdata = test,type = "class")
-      F1_Score(as.numeric(as.factor(test$Attrition)), as.numeric(predDT))*100
-    })
+
     output$Classification_DT <- renderPlot({
-      dataset=balanced_trainset()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      
-      decisionTreeModel=train_DT()
-      predDT=predict(decisionTreeModel,newdata = test,type = "class")
-      
-      scores <- data.frame(predDT,test$Attrition)
-      pr <- pr.curve(scores.class0=scores[scores$test.Attrition=="Leave",]$predDT,
-                     scores.class1=scores[scores$test.Attrition=="No Leave",]$predDT,
-                     curve=T)
-      
-      
-      plot(pr)
-      
-      
+      req(dt_eval()$roc_obj)
+      plot(dt_eval()$roc_obj, main = paste("ROC Curve for Decision Tree (AUC =", round(dt_eval()$roc_obj$auc, 3), ")"))
+      abline(a = 0, b = 1, lty = 2, col = "gray")
     })
-    
-    
-    
-    option <- reactive({
-      dataset<-pretraitement()
-      dmy <- dummyVars(~., data = dataset[-7])
-      data_one_cod <- data.frame(predict(dmy, newdata = dataset))
-      data_one_cod$Attrition=dataset$Attrition
-      
-      data_one_cod
+
+    output$DT_tree <- renderPlot({
+      req(dt_eval()$model)
+      rpart.plot(dt_eval()$model, 
+                box.palette = "auto", 
+                main = "Decision Tree")
     })
-    
-    output$ DT_tree <- renderPlot({
-      dataset=one_hot()
-      split=sample.split(dataset$Attrition,SplitRatio = input$trainsplit)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      
-      decisionTreeModel=train_DT()
-      
-      rpart.plot(decisionTreeModel)
-      
-    })
-    
-    output$Application  = output$Application <- DT::renderDataTable({
-      
-      old_dataset=pretraitement()
-      split=sample.split(old_dataset$Attrition,SplitRatio = 0.5)
-      train2=subset(old_dataset,split==T)
-      test1=subset(old_dataset,split==F)
-      x=test1$EmployeeID
-      
-      print(x)
-      dataset=option()
-      split=sample.split(dataset$Attrition,SplitRatio = 0.5)
-      train=subset(dataset,split==T)
-      test=subset(dataset,split==F)
-      
-      
-      
-      train$EmployeeID=NULL
-      test$EmployeeID=NULL
-      
-      #randomForestModel=train_rf()  
-      attLog=train_Lr()
-      predictLR=predict(attLog,newdata=test,type="response")
-      
-      
-      dataset[,1:65]=NULL
-      dataset$EmployeeID=x
-      dataset$Department=test1$Department
-      dataset$Gender=test1$Gender
-      dataset$JobRole=test1$JobRole
-      dataset$WorkLifeBalance=test1$WorkLifeBalance
-      dataset$Probability_Leave=round(predictLR*100, digits = 0)
-      
-      dataset
-      
-    })
-    
-    
+    ##############################
+
+    ###############################
     ############################### FONCTIONS GENERALES
     get_quali <- reactive({
       dataset = pretraitement()

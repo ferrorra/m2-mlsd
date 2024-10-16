@@ -1,17 +1,31 @@
 exploration_server <- function(input, output, df) {
   
   quantitative <- reactive({
-    names(df)[!grepl('factor|logical|character', sapply(df, class))]
+    names(df)[sapply(df, is.numeric)]
   })
   
-  # Correlation Heatmap entre les variables quantitatives
+  # Correlation Heatmap for quantitative variables
   output$heatmap <- renderPlotly({
     if (length(quantitative()) > 1) {
       Vm <- colnames(df)[colSums(is.na(df)) > 0]
       if (length(Vm) == 0) {
-        heatmaply(cor(df[, quantitative()]), margins = c(40, 40),
-                  k_col = 2, k_row = 2,
-                  limits = c(-1, 1))
+        cor_matrix <- cor(df[, quantitative()], use = "pairwise.complete.obs")
+        
+        heatmaply(
+          cor_matrix,
+          margins = c(50, 50),
+          dendrogram = "none",
+          xlab = "Variables",
+          ylab = "Variables",
+          main = "Correlation Heatmap",
+          colors = colorRampPalette(c("#1f77b4", "#ffffff", "#ff7f0e"))(100),
+          limits = c(-1, 1),
+          showticklabels = c(TRUE, TRUE),
+          plot_method = "plotly",
+          colorbar = list(title = "Correlation"),
+          node_type = "scatter",
+          node_size = 8
+        )
       }
     }
   })
@@ -31,7 +45,6 @@ exploration_server <- function(input, output, df) {
       })
     }
   })
-  
 
   # Cercle de Corrélation (PCA) entre variables quantitatives
   output$correlationCirclePlot <- renderPlotly({
@@ -209,187 +222,156 @@ exploration_server <- function(input, output, df) {
   }, rownames = TRUE, digits = 0)
   
   
-  
-  # # la méthode IQR choisie pour determniner les outliers
-  # output$caract_quantitative_IQR <- renderTable({
-  #   # Définition des colonnes choisies 
-  #   #print("I am here",input$quantlistbi1)
-  #   if(length(quantitative())>0){
-  #     var.names <-quantitative()
-  #     # Initialisation de la table
-  #     caract.df <- data.frame()
-  #     
-  #     # Pour chaque colonne, calcul de min, max, mean et ecart-type
-  #     for(strCol in var.names){
-  #       
-  #       
-  #       
-  #       
-  #       # get IQR
-  #       iqr=IQR(df[,strCol],na.rm = TRUE)
-  #       first_q=quantile((df[,strCol]))[2]
-  #       third_q=quantile((df[,strCol]))[4]
-  #       # get threshold values for outliers
-  #       Tmin = first_q-(1.5*iqr) 
-  #       Tmax = third_q+(1.5*iqr) 
-  #       
-  #       
-  #       nb_out=length(var(df[,strCol])[which(var(df[,strCol]) < Tmin | var(df[,strCol]) > Tmax)])
-  #       
-  #       
-  #       
-  #       prg=(sum(is.na(df[,strCol])))/(nrow(df))
-  #       caract.vect <- c("Quantitative", nb_out, 
-  #                        sum(is.na(df[,strCol])),prg)
-  #       caract.df <- rbind.data.frame(caract.df, caract.vect)
-  #     }
-  #     
-  #     # Définition des row/colnames
-  #     rownames(caract.df) <- var.names
-  #     colnames(caract.df) <- c("Type de variable", "Présence de outliers","Présence de valeurs manquantes","Pourcentage %")
-  #     # Renvoyer la table
-  #     caract.df
-  #   }
-  # }, rownames = TRUE, digits = 0)
-  
-   
-  
+
   
   
   # output$caract_quantitative <- renderTable({
+    
   #   # Définition des colonnes choisies 
   #   #print("I am here",input$quantlistbi1)
   #   if(length(quantitative())>0){
-  #   var.names <-quantitative()
-  #   # Initialisation de la table
-  #   caract.df <- data.frame()
-  #   
-  #   # Pour chaque colonne, calcul de min, max, mean et ecart-type
-  #   for(strCol in var.names){
-  #    
-  #     # la méthode choisie pour determniner les outliers
-  #     print(input$methode)
-  #     if(input$methode=="SD"){
-  #       print("I am here amir")
-  #       # get threshold values for outliers
-  #       Tmin=mean(var(df[,strCol]))-(3*sqrt(var(df[,strCol])))
-  #       
-  #       Tmax=mean(var(df[,strCol]))+(3*sqrt(var(df[,strCol])))
-  #       
-  #      
-  #       
+      
+  #     l=list()
+  #     var.names <-quantitative()
+  #     # Initialisation de la table
+  #     caract.df <- data.frame()
+      
+  #     # Pour chaque colonne, calcul de min, max, mean et ecart-type
+  #     for(strCol in var.names){
+        
+        
+        
+  #       prg=(sum(is.na(df[,strCol])))/(nrow(df))
+  #       caract.vect <- c("Quantitative", 
+  #                        sum(is.na(df[,strCol])),prg)
+  #       caract.df <- rbind.data.frame(caract.df, caract.vect)
   #     }
-  #     if(input$methode=="MAD"){
-  #       med=median(df[,strCol])
-  #       abs_dev=abs(df[,strCol]-med)
-  #       # get MAD
-  #       mad=1.4826 * median(abs_dev)
-  #       # get threshold values for outliers
-  #       Tmin = med-(3*mad) 
-  #       Tmax = med+(3*mad)
-  #       
-  #     }
-  #     if(input$methode=="IQR"){
-  #       # get IQR
-  #       iqr=IQR(df[,strcol])
-  #       first_q=quantile((df[,strcol]))[2]
-  #       third_q=quantile((df[,strcol]))[4]
-  #       # get threshold values for outliers
-  #       Tmin = first_q-(1.5*iqr) 
-  #       Tmax = third_q+(1.5*iqr) 
-  #       
-  #       
-  #     }
-  #     
-  #     nb_out=length(var(df[,strCol])[which(var(df[,strCol]) < Tmin | var(df[,strCol]) > Tmax)])
-  #     
-  #     
-  #     
-  #     
-  #     caract.vect <- c("Quantitative", nb_out, 
-  #                      sum(is.na(df[,strCol])))
-  #     caract.df <- rbind.data.frame(caract.df, caract.vect)
+  #     #print(l)
+  #     #Variable_outliers(l)
+      
+  #     # Définition des row/colnames
+  #     rownames(caract.df) <- var.names
+  #     colnames(caract.df) <- c("Type de variable","Nombre de valeurs manquantes","Pourcentage %")
+  #     # Renvoyer la table
+  #     caract.df
   #   }
-  #   
-  #   # Définition des row/colnames
-  #   rownames(caract.df) <- var.names
-  #   colnames(caract.df) <- c("Type de variable", "Présence de outliers", "Présence de valeurs manquntes")
-  #   # Renvoyer la table
-  #   caract.df
-  # }
+  #   else{
+  #     print("ce Dataset ne contient pas de variables quantitatives")
+  #   }
+    
   # }, rownames = TRUE, digits = 0)
   
-  
-  output$caract_quantitative <- renderTable({
-    
-    # Définition des colonnes choisies 
-    #print("I am here",input$quantlistbi1)
-    if(length(quantitative())>0){
-      
-      l=list()
-      var.names <-quantitative()
-      # Initialisation de la table
-      caract.df <- data.frame()
-      
-      # Pour chaque colonne, calcul de min, max, mean et ecart-type
-      for(strCol in var.names){
-        
-        
-        
-        prg=(sum(is.na(df[,strCol])))/(nrow(df))
-        caract.vect <- c("Quantitative", 
-                         sum(is.na(df[,strCol])),prg)
-        caract.df <- rbind.data.frame(caract.df, caract.vect)
-      }
-      #print(l)
-      #Variable_outliers(l)
-      
-      # Définition des row/colnames
-      rownames(caract.df) <- var.names
-      colnames(caract.df) <- c("Type de variable","Nombre de valeurs manquantes","Pourcentage %")
-      # Renvoyer la table
-      caract.df
-    }
-    else{
-      print("ce Dataset ne contient pas de variables quantitatives")
-    }
-    
-  }, rownames = TRUE, digits = 0)
-  
-  # qualitative
+  # # qualitative
   
   
-  qualitative<- reactive({
-    names(df)[grepl('factor|logical|character',sapply(df,class))]
-  })
-  output$caract_qualitative <- renderTable({
-    # Définition des colonnes choisies 
-    #print("I am here",input$quantlistbi1)
-    if(length(qualitative())>0){
-      var.names <-qualitative()
-      # Initialisation de la table
-      caract.df <- data.frame()
+  # qualitative<- reactive({
+  #   names(df)[grepl('factor|logical|character',sapply(df,class))]
+  # })
+  # output$caract_qualitative <- renderTable({
+  #   # Définition des colonnes choisies 
+  #   #print("I am here",input$quantlistbi1)
+  #   if(length(qualitative())>0){
+  #     var.names <-qualitative()
+  #     # Initialisation de la table
+  #     caract.df <- data.frame()
       
-      # Pour chaque colonne, calcul de min, max, mean et ecart-type
-      for(strCol in var.names){
-        #print(df[,strCol])
-        #nb_out=length(x[which(x < Tmin | x > Tmax)])
-        att_value=unique(df[,strCol])
+  #     # Pour chaque colonne, calcul de min, max, mean et ecart-type
+  #     for(strCol in var.names){
+  #       #print(df[,strCol])
+  #       #nb_out=length(x[which(x < Tmin | x > Tmax)])
+  #       att_value=unique(df[,strCol])
          
-        prg=(sum(as.character(df[,strCol])=="")+sum(as.character(df[,strCol])=="?"))/(nrow(df))
-        caract.vect <- c("Qualitative", 
-                         sum(as.character(df[,strCol])=="")+sum(as.character(df[,strCol])=="?"),prg,length(att_value))
-        caract.df <- rbind.data.frame(caract.df, caract.vect)
+  #       prg=(sum(as.character(df[,strCol])=="")+sum(as.character(df[,strCol])=="?"))/(nrow(df))
+  #       caract.vect <- c("Qualitative", 
+  #                        sum(as.character(df[,strCol])=="")+sum(as.character(df[,strCol])=="?"),prg,length(att_value))
+  #       caract.df <- rbind.data.frame(caract.df, caract.vect)
+  #     }
+      
+  #     # Définition des row/colnames
+  #     rownames(caract.df) <- var.names
+  #     colnames(caract.df) <- c("Type de variable", "Nombre de valeurs manquntes","Pourcentage %","Nombre de catégories")
+  #     # Renvoyer la table
+  #     caract.df
+  #   }
+  #   else{
+  #     print("ce dataset ne contient pas de variables qualitatives")
+  #   }
+  # }, rownames = TRUE, digits = 0)
+
+
+
+
+
+
+output$variable_characteristics <- renderTable({
+  # Combine quantitative and qualitative variables
+  all_vars <- c(quantitative(), qualitative())
+  
+  if (length(all_vars) > 0) {
+    # Initialize the table
+    caract.df <- data.frame()
+    
+    for (strCol in all_vars) {
+      # Determine variable type
+      var_type <- if (strCol %in% quantitative()) "Quantitative" else "Qualitative"
+      
+      # Calculate missing values
+      missing_count <- sum(is.na(df[, strCol])) + sum(df[, strCol] == "") + sum(df[, strCol] == "?")
+      missing_percentage <- (missing_count / nrow(df)) * 100
+      
+      # Check if variable is constant
+      is_constant <- if (length(unique(na.omit(df[, strCol]))) == 1) "Oui" else "Non"
+      
+      # Determine variable level
+      if (var_type == "Quantitative") {
+        level <- if (all(df[, strCol] %% 1 == 0, na.rm = TRUE)) "Discrète" else "Continue"
+      } else {
+        level <- if (is.ordered(factor(df[, strCol]))) "Ordinal" else "Nominal"
       }
       
-      # Définition des row/colnames
-      rownames(caract.df) <- var.names
-      colnames(caract.df) <- c("Type de variable", "Nombre de valeurs manquntes","Pourcentage %","Nombre de catégories")
-      # Renvoyer la table
-      caract.df
+      # Create vector for this variable
+      caract.vect <- c(var_type, 
+                       missing_count,
+                       missing_percentage,
+                       is_constant,
+                       level)
+      
+      # Add to data frame
+      caract.df <- rbind(caract.df, caract.vect)
     }
-    else{
-      print("ce dataset ne contient pas de variables qualitatives")
-    }
-  }, rownames = TRUE, digits = 0)
+    
+    # Set row and column names
+    rownames(caract.df) <- all_vars
+    colnames(caract.df) <- c("Type de variable", 
+                              "Nombre de valeurs manquantes", 
+                              "Pourcentage %", 
+                              "Variable constante (oui/non)", 
+                              "Niveau de variable")
+    
+    # Return the table
+    return(caract.df)
+  } else {
+    return(data.frame(Message = "Ce dataset ne contient pas de variables à analyser"))
+  }
+}, rownames = TRUE, digits = 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
